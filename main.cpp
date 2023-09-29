@@ -173,16 +173,15 @@ glm::vec3 PhongModel(glm::vec3 point, glm::vec3 normal, glm::vec3 view_direction
     // [TODO] refactor below this
     for (int i = 0; i < lights.size(); i++)
     {
+        glm::vec3 light_v = glm::normalize(lights[i]->position - point);
+        float diffuse_val = glm::dot(light_v, normal);
+        diffuse_val = (diffuse_val < 0) ? 0 : diffuse_val;
 
-        glm::vec3 l = glm::normalize(lights[i]->position - point);
-        float diffuse = glm::dot(l, normal);
-        diffuse = (diffuse < 0) ? 0 : diffuse;
+        glm::vec3 h = glm::normalize(light_v + view_direction);
+        float specular_val = glm::pow(glm::dot(h, normal), 4 * material.shininess);
+        specular_val = (specular_val < 0) ? 0 : specular_val;
 
-        glm::vec3 h = glm::normalize(l + view_direction);
-        float specular = glm::pow(glm::dot(h, normal), 4 * material.shininess);
-        specular = (specular < 0) ? 0 : specular;
-
-        color += lights[i]->color * (material.diffuse * diffuse + material.specular * specular);
+        color += lights[i]->color * (material.diffuse * diffuse_val + material.specular * specular_val);
     }
     color += ambient_light * material.ambient;
     // [TODO] refactor above this
@@ -267,7 +266,22 @@ int main(int argc, const char *argv[])
     float fov = 90;   // field of view
 
     sceneDefinition(); // Let's define a scene
+    if (argc == 2)
+    {
+        try
+        {
+            float angle = 2 * M_PI / 60.0 * stoi(argv[1]);
+            printf("Rendering frame with a light at an angle of %f \n", angle);
 
+            float light_x = lights[1]->position.x * cos(angle) - lights[1]->position.z * sin(angle);
+            float light_z = lights[1]->position.x * sin(angle) + lights[1]->position.z * cos(angle);
+            lights[1]->position = glm::vec3(light_x, lights[1]->position.y, light_z);
+        }
+        catch (...)
+        {
+            printf("Invalid input given for angle, expected a float, got %s", argv[2]);
+        }
+    }
     Image image(width, height); // Create an image where we will store the result
 
     float s = 2 * tan(0.5 * fov / 180 * M_PI) / width;
@@ -296,9 +310,11 @@ int main(int argc, const char *argv[])
     cout << "I could render at " << (float)CLOCKS_PER_SEC / ((float)t) << " frames per second." << endl;
 
     // Writing the final results of the rendering
+
     if (argc == 2)
     {
-        image.writeImage(argv[1]);
+        std::string f_name = std::string(argv[1]) + ".ppm";
+        image.writeImage(f_name.c_str());
     }
     else
     {
