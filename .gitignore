@@ -1,2 +1,8 @@
 *.out
 .vscode
+*.mp4
+*.ppm
+*.xml
+*.zip
+*.pdf
+.idea
