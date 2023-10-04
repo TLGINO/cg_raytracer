@@ -6,12 +6,12 @@ run: all
 	eog result.ppm &
 
 clean:
-	rm ./a.out ./result.ppm
+	rm ./a.out ./result.ppm ./[0-9]*.ppm
 
 video:
-	g++ main.cpp -o a.out
-	for i in $(seq 1 180); do
-	  ./a.out $i
+	g++ main_ex4.cpp -o a.out
+	@for i in $$(seq 1 180); do \
+	  ./a.out $$i; \
 	done
 	input_pattern="%01d.ppm" # Change this pattern to match your file naming
 	output_file="output.mp4"
