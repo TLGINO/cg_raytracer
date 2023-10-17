@@ -1,5 +1,5 @@
 all:
-	g++ main.cpp
+	g++ assignment_3/main.cpp
 
 run: all
 	./a.out
@@ -9,7 +9,7 @@ clean:
 	rm ./a.out ./result.ppm ./[0-9]*.ppm
 
 video:
-	g++ main_ex4.cpp -o a.out
+	g++ assignment_2/main_ex4.cpp -o a.out
 	@for i in $$(seq 1 180); do \
 	  ./a.out $$i; \
 	done
