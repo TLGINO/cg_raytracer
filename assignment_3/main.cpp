@@ -309,15 +309,15 @@ void sceneDefinition()
 /**
  * Performing tone mapping and gamma correction of intensity computed using the raytracer
  * EX3
+ * value of gamma from: https://www.rtings.com/laptop/reviews/dell/precision-5560-2021#test_5194
  * @param intensity Input intensity
  * @return Tone mapped intensity in range [0,1]
  */
-glm::vec3 toneMapping(glm::vec3 intensity)
-{
-	float gamma = 1.1f;
-	float alpha = 1.0f;
-	glm::vec3 tonemapped = alpha * glm::pow(intensity, glm::vec3(gamma)); // tonemapped intensity
-	return glm::clamp(tonemapped, glm::vec3(0.0), glm::vec3(1.0));
+vec3 toneMapping(vec3 intensity) {
+	float alpha = 0.8f, beta = 1.2f, gamma = 2.13f;
+    vec3 I_tone_mapped = alpha * pow(intensity, vec3(beta));
+    vec3 I_gamma_corrected = min(pow(I_tone_mapped, vec3(1/gamma)), 1.0f);
+	return clamp(I_gamma_corrected, vec3(0.0f), vec3(1.0f));
 }
 
 int main(int argc, const char *argv[]) {
