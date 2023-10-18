@@ -200,39 +200,39 @@ vector<Object *> objects;   // list of all objects in the scene
 vec3 PhongModel(vec3 point, vec3 normal, vec2 uv, vec3 view_direction, Material material) {
 	vec3 color(0.0f);
 
-	glm::vec3 color(0.0);
-	for (int light_num = 0; light_num < lights.size(); light_num++)
-	{
+    vec3 I_diffuse = vec3(0), I_specular = vec3(0),
+    // ambient illumination
+    I_ambient = material.ambient * ambient_light;
 
-		glm::vec3 light_direction = glm::normalize(lights[light_num]->position - point);
-		glm::vec3 reflected_direction = glm::reflect(-light_direction, normal);
+	for (Light*& l : lights) {
+        /* Ex3: Modify the code by adding attenuation of the light due to distance
+         * from the intersection point to the light source
+         */
+        float r = distance(point, l->position);
+        float attenuation = 1 / pow(max(r, 0.5f), 2);
 
-		float NdotL = glm::clamp(glm::dot(normal, light_direction), 0.0f, 1.0f);
-		float VdotR = glm::clamp(glm::dot(view_direction, reflected_direction), 0.0f, 1.0f);
+        // DIFFUSE REFLECTION:
+        // from diffuse reflection point, cos of angle of surface normal n and direction from point to light source
+		vec3 l_direction = normalize(l->position - point);
+        float cos_phi = glm::clamp(dot(normal, l_direction), 0.0f, 1.0f); // already normalized
 
-		glm::vec3 diffuse_color = material.diffuse;
-		if (material.texture)
-			diffuse_color = material.texture(uv);
+        /* Ex2: Modify the code by adding texturing,
+         * i.e. diffuse color should be computed using one of the texture functions
+         * according to the texture coordinates stored in the uv variable.
+         * Make sure that the code works also for objects that should not have texture.
+         */
+        I_diffuse += material.diffuse * cos_phi * l->color * attenuation
+                * (material.texture ? material.texture(uv) : vec3(1.0f));
 
-		glm::vec3 diffuse = diffuse_color * glm::vec3(NdotL);
-		glm::vec3 specular = material.specular * glm::vec3(pow(VdotR, material.shininess));
-
-		// HERE JEFF
-		/*
-
-
-		 Excercise 3 - Modify the code by adding attenuation of the light due to distance from the intersection point to the light source
-
-
-
-		 */
-
-		color += lights[light_num]->color * (diffuse + specular);
+        // SPECULAR HIGHLIGHT:
+		vec3 r_direction = reflect(-l_direction, normal);
+        float k = max(material.shininess, 1.0f);
+        float cos_alpha = glm::clamp(dot(view_direction, r_direction), 0.0f, 1.0f);
+        I_specular += material.specular * pow(cos_alpha, k) * l->color * attenuation;
 	}
-	color += ambient_light * material.ambient;
 
-	color = glm::clamp(color, glm::vec3(0.0), glm::vec3(1.0));
-	return color;
+    color = I_ambient + I_diffuse + I_specular;
+	return clamp(color, vec3(0), vec3(1));
 }
 
 /**
