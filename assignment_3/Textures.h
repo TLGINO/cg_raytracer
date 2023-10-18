@@ -10,18 +10,27 @@
 
 #include "glm/glm.hpp"
 
-glm::vec3 rainbowTexture(glm::vec2 uv)
-{
-    float n = 20;
-    int value = int(floor(n * uv.t + 1.5 * n * uv.s)) % 3;
-    switch (value)
-    {
+using glm::vec3;
+using glm::vec2;
+
+vec3 checkerboardTexture(vec2 uv) {
+    /* Exercise 2 (3 points) */
+    float N = 40;
+    float f = int(floor(N * uv.s) + floor(N * uv.t)) % 2;
+    return vec3(f);
+}
+
+vec3 rainbowTexture(vec2 uv) {
+    /* Exercise 2 (5 points) */
+    float N = 40;
+    int result = int(floor(N * uv.t + 0.5 * N * uv.s)) % 3;
+    switch (result) {
     case 0:
-        return glm::vec3(0, 0, 1);
+        return {1.0f, 0.0f, 0.0f};
     case 1:
-        return glm::vec3(0, 1, 0);
+        return {0.0f, 1.0f, 0.0f};
     default:
-        return glm::vec3(1, 0, 0);
+        return {0.0f, 0.0f, 1.0f};
     }
 }
 #endif /* Textures_h */
