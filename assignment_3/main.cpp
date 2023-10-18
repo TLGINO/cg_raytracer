@@ -154,19 +154,32 @@ public:
 		this->material = material;
 	}
 
-		float t = glm::dot(point - ray.origin, normal) / glm::dot(ray.direction, normal);
+    /**
+     * Ex1: Plane-ray intersection
+     */
+	Hit intersect(Ray ray) {
+		float ray_dot_n = dot(point - ray.origin, normal);
+        float d_dot_N = dot(ray.direction, normal);
 
-		if (t <= 0)
+        // cos b of angle parallel to plane
+        if (d_dot_N == 0)
+            return Hit();
+
+        float t = ray_dot_n / d_dot_N;
+
+        // intersection behind ray origin
+		if (t < 0)
 			return Hit();
 
-		Hit hit;
-		hit.hit = true;
-		hit.intersection = ray.origin + t * ray.direction;
-		hit.distance = glm::distance(ray.origin, hit.intersection);
-		hit.normal = glm::normalize(normal);
-		hit.object = this;
-		return hit;
-	}
+		Hit hit {
+            .hit = true,
+            .normal = normalize(normal),
+            .intersection = ray.origin + t * ray.direction,
+            .distance = distance(ray.origin, hit.intersection),
+            .object = this,
+        };
+        return hit;
+    }
 };
 
 /**
