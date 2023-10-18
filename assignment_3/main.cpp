@@ -274,49 +274,64 @@ vec3 trace_ray(Ray ray) {
 /**
  * Function defining the scene
  */
-void sceneDefinition()
-{
+void sceneDefinition() {
+    vec3 color_red {1.5f, 0.3f, 0.3f};
+    vec3 color_blue {0.4f, 0.4f, 1.5f};
+    vec3 color_green {0.5f, 1.5f, 0.5f};
 
-	Material green_diffuse;
-	green_diffuse.ambient = glm::vec3(0.07f, 0.09f, 0.07f);
-	green_diffuse.diffuse = glm::vec3(0.7f, 0.9f, 0.7f);
+	Material red_specular {
+        .ambient = {0.01f, 0.03f, 0.03f},
+        .diffuse = color_red,
+        .specular = vec3(0.5f),
+        .shininess = 10.0f,
+    };
 
-	Material red_specular;
-	red_specular.diffuse = glm::vec3(1.0f, 0.3f, 0.3f);
-	red_specular.ambient = glm::vec3(0.01f, 0.03f, 0.03f);
-	red_specular.specular = glm::vec3(0.5);
-	red_specular.shininess = 10.0;
+    Material blue_shiny {
+        .ambient = {0.07f, 0.07f, 0.1f},
+        .diffuse = color_blue,
+        .specular = vec3(0.6f),
+        .shininess = 100.0f,
+    };
 
-	Material blue_specular;
-	blue_specular.ambient = glm::vec3(0.07f, 0.07f, 0.1f);
-	blue_specular.diffuse = glm::vec3(0.7f, 0.7f, 1.0f);
-	blue_specular.specular = glm::vec3(0.6);
-	blue_specular.shininess = 100.0;
+    Material green_diffuse {
+        .ambient = {0.07f, 0.09f, 0.07f},
+        .diffuse = color_green,
+    };
 
-	Material material_rainbow;
-	material_rainbow.texture = &rainbowTexture;
-	material_rainbow.ambient = glm::vec3(0.0f);
-	material_rainbow.specular = glm::vec3(1.0);
-	material_rainbow.shininess = 10.0;
+	Material material_rainbow {
+        .texture = &rainbowTexture,
+    };
 
-	objects.push_back(new Sphere(1.0, glm::vec3(1, -2, 8), blue_specular));
-	objects.push_back(new Sphere(0.5, glm::vec3(-1, -2.5, 6), red_specular));
-	objects.push_back(new Sphere(1.0, glm::vec3(3, -2, 6), green_diffuse));
+    // spheres
+    objects.push_back(new Sphere(0.5f, {-1.0f, -2.5f, 6.0f}, red_specular));
+	objects.push_back(new Sphere(1.0f, {1.0f, -2.0f, 8.0f}, blue_shiny));
+	objects.push_back(new Sphere(1.0f, {3.0f, -2.0f, 6.0f}, green_diffuse));
+	objects.push_back(new Sphere(6.0f, {-5.0f, 3.5f, 20.0f}, material_rainbow));
 
-	objects.push_back(new Sphere(5.0, glm::vec3(-5, 3, 20), material_rainbow));
+    // planes
+    objects.push_back(new Plane({0.0f, 0.0f, -0.01f},
+                                {0.0f, 0.0f, 1.0f},
+                                Material())); // back
+    objects.push_back(new Plane({15.0f, 0.0f, 0.0f},
+                                {-1.0f, 0.0f, 0.0f},
+                                { .diffuse = {0.6f, 0.6f, 1.0f}, })); // right
+    objects.push_back(new Plane({0.0f, 0.0f, 30.0f},
+                                {0.0f, 0.0f, -1.0f},
+                                { .diffuse = {0.5f, 1.0f, 0.5f}, })); // front
+	objects.push_back(new Plane({-15.0f, 0.0f, 0.0f},
+                                {1.0f, 0.0f, 0.0f},
+                                { .diffuse = {0.6f, 0.4f, 0.4f}, })); // left
+	objects.push_back(new Plane({0.0f, 27.0f, 0.0f},
+                                {0.0f, -1.0f, 0.0f},
+                                Material())); // top
+	objects.push_back(new Plane({0.0f, -3.0f, 0.0f},
+                                {0.0f, 1.0f, 0.0f},
+                                Material())); // bottom
 
-	objects.push_back(new Plane(glm::vec3(-15, 0, 0), glm::vec3(1, 0, 0), blue_specular));
-	objects.push_back(new Plane(glm::vec3(15, 0, 0), glm::vec3(-1, 0, 0), red_specular));
-
-	objects.push_back(new Plane(glm::vec3(0, 27, 0), glm::vec3(0, -1, 0), green_diffuse));
-	objects.push_back(new Plane(glm::vec3(0, -3, 0), glm::vec3(0, 1, 0), blue_specular));
-
-	objects.push_back(new Plane(glm::vec3(0, 0, -0.01), glm::vec3(0, 0, -1), red_specular));
-	objects.push_back(new Plane(glm::vec3(0, 0, 30), glm::vec3(0, 0, 1), green_diffuse));
-
-	lights.push_back(new Light(glm::vec3(0, 26, 5), glm::vec3(0.4)));
-	lights.push_back(new Light(glm::vec3(0, 1, 12), glm::vec3(0.4)));
-	lights.push_back(new Light(glm::vec3(0, 5, 1), glm::vec3(0.4)));
+    // lights
+	lights.push_back(new Light({0.0f, 26.0f, 5.0f}, vec3(150.0f)));
+	lights.push_back(new Light({0.0f, 1.0f, 12.0f}, vec3(25.0f)));
+	lights.push_back(new Light({0.0f, 5.0f, 1.0f}, vec3(40.0f)));
 }
 
 /**
