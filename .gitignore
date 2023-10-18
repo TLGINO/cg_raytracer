@@ -1,7 +1,14 @@
-*.out
-.vscode
+# project media
 *.mp4
 *.ppm
 *.xml
 *.zip
+
+# IDE
 .idea
+.vscode
+
+# from make file
+*.o
+*.bin
+*.out

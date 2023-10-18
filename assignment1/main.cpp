@@ -210,4 +210,4 @@ int main(int argc, const char *argv[])
     Ray r(glm::vec3(0, -2, 12), glm::vec3(0,0, -1));
     Hit h = mysphere.intersect(r);
     cout << h.hit << endl;
-    */
+ */
