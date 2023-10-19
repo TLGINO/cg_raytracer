@@ -145,8 +145,8 @@ public:
 
 class Plane : public Object {
 private:
-	vec3 normal;
-	vec3 point;
+    vec3 point = vec3(0);
+	vec3 normal = vec3(0, 0, 1);
 
 public:
 	Plane(vec3 point, vec3 normal) : point(point), normal(normal) {}
@@ -177,6 +177,7 @@ public:
             .intersection = ray.origin + t * ray.direction,
             .distance = distance(ray.origin, hit.intersection),
             .object = this,
+            .uv = {0, 0},
         };
         return hit;
     }
