@@ -6,7 +6,6 @@ SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
 OBJ_DIR = obj
 OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRC_FILES))
 OUTPUT_BIN = raytracer.bin
-OUTPUT_VIDEO = output.mp4
 RESULT_PPM = result.ppm
 
 # targets
