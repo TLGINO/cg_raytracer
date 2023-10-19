@@ -1,19 +1,33 @@
-all:
-	g++ -Ofast assignment_3/main.cpp
+# vars
+CXX = g++
+CXXFLAGS = -std=c++20 -Wall -Wextra -pedantic -Ofast -Wno-volatile
+SRC_DIR = .
+SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
+OBJ_DIR = obj
+OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRC_FILES))
+OUTPUT_BIN = raytracer.bin
+OUTPUT_VIDEO = output.mp4
+RESULT_PPM = result.ppm
+
+# targets
+.PHONY: all clean run
+
+
+all: $(OUTPUT_BIN)
+
+$(OUTPUT_BIN): $(OBJ_FILES)
+	$(CXX) -o $@ $^
+
+# change to SRC_FILES
+$(OBJ_DIR)/%.o: $(SRC_FILES) | $(OBJ_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJ_DIR):
+	mkdir $(OBJ_DIR)
 
 run: all
-	./a.out
-	eog result.ppm &
+	./$(OUTPUT_BIN)
+	eog $(RESULT_PPM) &
 
 clean:
-	rm ./a.out ./result.ppm ./[0-9]*.ppm
-
-video:
-	g++ assignment_2/main_ex4.cpp -o a.out -Ofast
-	@for i in $$(seq 1 180); do \
-	  ./a.out $$i; \
-	done
-	input_pattern="%01d.ppm" # Change this pattern to match your file naming
-	output_file="output.mp4"
-	ffmpeg -framerate 60 -i "$input_pattern" -c:v vp9  -r 60 "$output_file" -y
-	rm [0-9]*.ppm
+	rm -rf $(OUTPUT_BIN) $(RESULT_PPM) $(OBJ_DIR)
