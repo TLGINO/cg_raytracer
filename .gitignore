@@ -13,3 +13,10 @@
 *.bin
 *.out
 ./obj
+
+# from latex
+*.aux
+*.gz
+*.log
+*.fls
+*_latexmk
