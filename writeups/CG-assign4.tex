@@ -2,50 +2,57 @@
 
 \usepackage{amsmath}
 \usepackage{amssymb}
-
-
-
-
-
-
-
+\usepackage{gensymb}
+\usepackage{multirow}
 
 \title{CG assignment 4}
 \author{Jeferson Morales Mariciano, Martin Lettry}
-
 \date{\today}
 
 \begin{document}
 
 \maketitle
 
-\section*{Ex 1.1}
+\section*{Ex 1 [5 points]}
+Let us consider a 2D coordinate system with points $p_1 = [1, 1]^\intercal$,
+and $p = [1.5, 2.5]^\intercal$.
+Additionally, let's define a vector $u = p - p_1$.
+Perform the following tasks:
+
+\subsection*{Task 1 [1 points]}
+Construct two matrices, $R_{90}$, $T \in \mathbb{R}^{3 \times 3}$,
+such that the first one performs counter-clockwise rotation around
+the center of the coordinates system by angle $90 \degree$, and the second one performs translation
+by vector $t = [1, -2]^\intercal$, in homogeneous coordinates.
 
 \[
-    p = \begin{bmatrix}
-        1.5 \\
-        2.5 \\
+    p =
+    \begin{bmatrix}
+        1.5 \\ 2.5 \\
+    \end{bmatrix}
+    , p_1 =
+    \begin{bmatrix}
+        1 \\ 1 \\
     \end{bmatrix}
 \]
 
 \[
-    p1 = \begin{bmatrix}
-        1 \\
-        1 \\
+    u = p - p_1 =
+    \begin{bmatrix}
+        0.5 \\ 1.5 \\
     \end{bmatrix}
 \]
-
-
+From generic counter clockwise rotation in 2D coord system:
 \[
-    u = p - p1 =
-    u = \begin{bmatrix}
-        0.5 \\
-        1.5 \\
+    R(\alpha) =
+    \begin{bmatrix}
+        cos(\alpha) & -sin(\alpha) \\
+        sin(\alpha) & cos(\alpha)  \\
     \end{bmatrix}
 \]
-
+Then, rotation matrix with homogeneous coordinates for $\alpha = 90\degree$ is:
 \[
-    R90 =
+    R_{90} =
     \begin{bmatrix}
         cos(90) & -sin(90) & 0 \\
         sin(90) & cos(90)  & 0 \\
@@ -58,18 +65,26 @@
         0 & 0  & 1 \\
     \end{bmatrix}
 \]
+Given rotation matrix $R$ and translation vector $t$ for 2D space coordinates,
+the affine transformation matrix $T$ is:
+\begin{equation*}
+    \begin{aligned}
+        T & =
+        \begin{bmatrix}
+            \multicolumn{3}{c}{\multirow{2}{*}{R}} & \multirow{2}{*}{t}         \\
+            \multicolumn{4}{c}{}                                                \\
+            0                                      & \dots              & 0 & 1 \\
+        \end{bmatrix}
+        \in \mathbb{R}^{3 \times 3} \\[-0.5ex]
+          & = \begin{bmatrix}
+                  1 & 0 & 1  \\
+                  0 & 1 & -2 \\
+                  0 & 0 & 1  \\
+              \end{bmatrix}
+    \end{aligned}
+\end{equation*}
 
-
-\[
-    T = \begin{bmatrix}
-        1 & 0 & 1  \\
-        0 & 1 & -2 \\
-        0 & 0 & 1  \\
-    \end{bmatrix}
-\]
-
-
-\section*{Ex 1.2}
+\subsection*{Task 2 [1 points]}
 Using homogeneous coordinates:
 
 \[
@@ -265,9 +280,9 @@ Now for the translation:
 
 
 
-We can see that T had no effect on u, this is because u is a vector and so is not affected by translation.
+We can see that T had no effect on u\_90, this is because u\_90 is a vector and so is not affected by translation.
 
-\section*{Ex 1.3}
+\subsection*{Task 3 [1 points]}
 
 \[
     S =
@@ -362,8 +377,8 @@ We can see that T had no effect on u, this is because u is a vector and so is no
         1  \\
     \end{bmatrix}
 \]
-\section*{Ex 1.4}
 
+\subsection*{Task 4 [2 points]}
 \[
     S^{-1} =
     \begin{bmatrix}
@@ -493,6 +508,7 @@ We can see that T had no effect on u, this is because u is a vector and so is no
 
 
 
+\cleardoublepage
 \section*{Ex 2}
 
 \[
@@ -577,6 +593,7 @@ Because all these dot products are positive, we can confirm that the point is in
 
 
 
+\cleardoublepage
 \section*{Ex 3}
 
 
@@ -606,6 +623,7 @@ In other words, the barycentric coordinates for the centroid $G$ are $\left(1/3,
 
 
 
+\cleardoublepage
 \section*{Ex 4}
 We can see that, when dealing with a given homogeneous coordinate $v = \begin{bmatrix} a \\ b \\ c \end{bmatrix}$, the corresponding Cartesian coordinate $f$ can be determined by dividing each component by the value of the third dimension and omitting that dimension. This operation yields $f = \begin{bmatrix} a/c \\ b/c \end{bmatrix}$.
 
