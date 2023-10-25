@@ -1,7 +1,7 @@
 # Fdb version 3
-["pdflatex"] 1698257290 "/home/martin/Documents/Perso/Uni/USI/CG/cg_raytracer/writeups/CG-assign4.tex" "CG-assign4.pdf" "CG-assign4" 1698257291
-  "/etc/texmf/web2c/texmf.cnf" 1688315832 475 c0e671620eb5563b2130f56340a5fde8 ""
-  "/home/martin/Documents/Perso/Uni/USI/CG/cg_raytracer/writeups/CG-assign4.tex" 1698257290 12820 2afdf82d8ade06e19b756cf33ce955df ""
+["pdflatex"] 1698259984 "/home/gief/Documents/uni/cg/martin-repo/writeups/CG-assign4.tex" "CG-assign4.pdf" "CG-assign4" 1698259985
+  "/etc/texmf/web2c/texmf.cnf" 1666218111 475 c0e671620eb5563b2130f56340a5fde8 ""
+  "/home/gief/Documents/uni/cg/martin-repo/writeups/CG-assign4.tex" 1698259983 13194 e2f76600430a13fea9c1854c4529bc95 ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm" 1246382020 1004 54797486969f23fa377b128694d548df ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex8.tfm" 1246382020 988 bdf658c3bfc2d96d3c8b02cfc1c94c20 ""
@@ -33,6 +33,7 @@
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb" 1248133631 35752 024fb6c41858982481f6968b5fc26508 ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb" 1248133631 32722 d7379af29a190c3f453aba36302ff5a9 ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb" 1248133631 32362 179c33bbf43f19adbb3825bb4e36e57a ""
+  "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb" 1248133631 31809 8670ca339bf94e56da1fc21c80635e2a ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb" 1248133631 32762 224316ccc9ad3ca0423a14971cfa7fc1 ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb" 1248133631 32569 5e5ddc8df908dea60932f3c484a54c0d ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb" 1248133631 32716 08e384dc442464e7285e891af9f45947 ""
@@ -51,10 +52,10 @@
   "/usr/share/texlive/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def" 1642022539 29921 f0f4f870357ebfb8fe58ed9ed4ee9b92 ""
   "/usr/share/texlive/texmf-dist/web2c/texmf.cnf" 1644012257 39432 7155514e09a3d69036fac785183a21c2 ""
   "/usr/share/texmf/web2c/texmf.cnf" 1644012257 39432 7155514e09a3d69036fac785183a21c2 ""
-  "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1688315835 165012 f177baa1c39a3ebd62c3096a43521a0d ""
-  "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1688315843 1435814 fbd4f068f8e0630d6be5814ce90e6353 ""
-  "CG-assign4.aux" 1698257291 32 77e0dffd05b653a64f0caf3eb9bb454a "pdflatex"
-  "CG-assign4.tex" 1698257290 12820 2afdf82d8ade06e19b756cf33ce955df ""
+  "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1697315702 4036811 4cb80868003c86b962b6b5ae1e1e2902 ""
+  "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1697316112 1405657 97517db22e10522fddb1c4db8b231041 ""
+  "CG-assign4.aux" 1698259984 32 4d1825978335c8847f72f7c473f9edc8 "pdflatex"
+  "CG-assign4.tex" 1698259983 13194 e2f76600430a13fea9c1854c4529bc95 ""
   (generated)
   "CG-assign4.aux"
   "CG-assign4.log"

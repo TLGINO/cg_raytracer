@@ -1,4 +1,5 @@
 \documentclass{article}
+
 \usepackage{amsmath}
 \usepackage{amssymb}
 
@@ -632,24 +633,29 @@ When a point $p$ lies on the y-axis (i.e., $p_x = 0$), there is no valid solutio
 
 
 
-
+\cleardoublepage
 \section*{Bonus exercise [2 points]}
 
 \textbf{Consider the same task as in Exercise 4, but the line onto which the points are projected can be now arbitrary,
     and it is defined by a line equation $y = ax + b$, where $a, b \in \mathbb{R}$ are constants. Derive the matrix $M$ for this
     more general case.} \\
 
-Represent the line equation as $r_1 : y = ax + b$ and put it in system with the previous exercise $4$ answer.
+Represent the line equation as $l_1 : y = ax + b$ and put it in system with the previous exercise $4$ answer.
 
 \begin{equation*}
     \begin{cases}
-        r_1: y = \frac{p_y}{p_x} x \\
+        l_1: y = \frac{p_y}{p_x} x \\
         y = ax + b
     \end{cases}
     \rightarrow
     \begin{cases}
-        r_1: y = \frac{p_y}{p_x} x \\
+        l_1: y = \frac{p_y}{p_x} x \\
         \frac{p_y}{p_x} x = ax + b
+    \end{cases}
+    \rightarrow
+    \begin{cases}
+        l_1: y = \frac{p_y}{p_x} x \\
+        x (\frac{p_y - a p_x}{p_x}) = b
     \end{cases}
     \rightarrow
     \begin{cases}
@@ -658,32 +664,34 @@ Represent the line equation as $r_1 : y = ax + b$ and put it in system with the 
     \end{cases}
 \end{equation*}
 
-From this we know that:
+Then, the matrix $M$ is given by:
 \[
-    \frac{m_{11}x + m_{12}y + m_{13}}{m_{31}x + m_{32}y + m_{33}} = \frac{bp_x}{p_y - ap_x}
-\]
-and
-\[
-    \frac{m_{21}x + m_{22}y + m_{23}}{m_{31}x + m_{32}y + m_{33}} = \frac{bp_y}{p_y - ap_x}
-\]
-
-Thus we obtained that:
-\[
+    M =
     \begin{bmatrix}
-        m_{11} & m_{12} & m_{13} \\
-        m_{21} & m_{22} & m_{23} \\
-        m_{31} & m_{32} & m_{33}
+        M_{11} & M_{12} & M_{13} \\
+        M_{21} & M_{22} & M_{23} \\
+        M_{31} & M_{32} & M_{33}
     \end{bmatrix}
-    =
+\]
+where
+\begin{equation*}
+    p'' =
+    \begin{cases}
+        p_x'' = \frac{M_{11}p_x + M_{12}p_y + M_{13}p_x}{M_{31}p_x + M_{32}p_y + M_{33}p_x} = \frac{bp_x}{p_y - ap_x} \\\\
+        p_y'' = \frac{M_{21}p_x + M_{22}p_y + M_{23}p_x}{M_{31}p_x + M_{32}p_y + M_{33}p_x} = \frac{bp_y}{p_y - ap_x}
+    \end{cases}
+\end{equation*}
+so the only defined values in $M$ are:
+\[
+    M_{11} = b, M_{22} = b, M_{31} = -a, M_{32} = 1
+\]
+Finally:
+\[
+    M =
     \begin{bmatrix}
         b  & 0 & 0 \\
         0  & b & 0 \\
         -a & 1 & 0
     \end{bmatrix}
 \]
-
-
-
-
-
 \end{document}
