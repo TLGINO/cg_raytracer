@@ -35,7 +35,6 @@ by vector $t = [1, -2]^\intercal$, in homogeneous coordinates.
         1 \\ 1 \\
     \end{bmatrix}
 \]
-
 \[
     u = p - p_1 =
     \begin{bmatrix}
@@ -52,7 +51,7 @@ From generic counter clockwise rotation in 2D coord system:
 \]
 Then, rotation matrix with homogeneous coordinates for $\alpha = 90\degree$ is:
 \[
-    R_{90} =
+    R(90) =
     \begin{bmatrix}
         cos(90) & -sin(90) & 0 \\
         sin(90) & cos(90)  & 0 \\
@@ -65,7 +64,7 @@ Then, rotation matrix with homogeneous coordinates for $\alpha = 90\degree$ is:
         0 & 0  & 1 \\
     \end{bmatrix}
 \]
-Given rotation matrix $R$ and translation vector $t$ for 2D space coordinates,
+Given rotation matrix $R$ and translation vector $t$ for 2D coordinates system,
 the affine transformation matrix $T$ is:
 \begin{equation*}
     \begin{aligned}
@@ -75,7 +74,7 @@ the affine transformation matrix $T$ is:
             \multicolumn{4}{c}{}                                                \\
             0                                      & \dots              & 0 & 1 \\
         \end{bmatrix}
-        \in \mathbb{R}^{3 \times 3} \\[-0.5ex]
+        \in \mathbb{R}^{3 \times 3} \\[-0.2ex]
           & = \begin{bmatrix}
                   1 & 0 & 1  \\
                   0 & 1 & -2 \\
@@ -85,116 +84,74 @@ the affine transformation matrix $T$ is:
 \end{equation*}
 
 \subsection*{Task 2 [1 points]}
-Using homogeneous coordinates:
+Represent the points $p_1$ and $p$ as well as the vector $u$ using homogeneous coordinates and
+transform them first using the $R(90)$ and then $T$ matrices.
+Convert the obtained points and vector back into Cartesian coordinates and denote them by
+$p_1'$, $p'$, and $u'$.
+Draw all the points and vectors before and after the transformation,
+and verify that $u' = p' - p_1'$.
+What influence did the matrix $T$ have on the $u'$?
+\\\newline
+Using homogeneous coordinates for position points:
 
 \[
-    p1 = \begin{bmatrix}
-        1 \\
-        1 \\
-        1 \\
+    p_1 =
+    \begin{bmatrix}
+        1 \\ 1 \\ 1 \\
+    \end{bmatrix}
+    , p =
+    \begin{bmatrix}
+        1.5 \\ 2.5 \\ 1 \\
     \end{bmatrix}
 \]
-
+$u$ is displacement vector, so $0$ in homogeneous coordinates last element:
 \[
-    p = \begin{bmatrix}
+    u = p - p_1 =
+    \begin{bmatrix}
+        0.5 \\ 1.5 \\ 0 \\
+    \end{bmatrix}
+\]
+Using homogeneous coordinates allow chaining sequence of transformations to be represented
+with a single matrix being the product of the transformation matrices.
+In this case, the transformation matrix is:
+
+\begin{equation*}
+    \begin{aligned}
+        M & = T \cdot R(90) \\[-0.2ex]
+          & =
+        \begin{bmatrix}
+            1 & 0 & 1  \\
+            0 & 1 & -2 \\
+            0 & 0 & 1  \\
+        \end{bmatrix}
+        \cdot
+        \begin{bmatrix}
+            0 & -1 & 0 \\
+            1 & 0  & 0 \\
+            0 & 0  & 1 \\
+        \end{bmatrix}      \\[-0.2ex]
+          & =
+        \begin{bmatrix}
+            0 & -1 & 1  \\
+            1 & 0  & -2 \\
+            0 & 0  & 1  \\
+        \end{bmatrix}
+        \in \mathbb{R}^{3 \times 3}
+    \end{aligned}
+\end{equation*}
+Calculating with matrix $M$:
+\[
+    p' = M \cdot p =
+    \begin{bmatrix}
+        0 & -1 & 1  \\
+        1 & 0  & -2 \\
+        0 & 0  & 1  \\
+    \end{bmatrix}
+    \cdot
+    \begin{bmatrix}
         1.5 \\
         2.5 \\
         1   \\
-    \end{bmatrix}
-\]
-
-\[
-    u = p - p1 =
-    u = \begin{bmatrix}
-        0.5 \\
-        1.5 \\
-        0   \\
-    \end{bmatrix}
-\]
-
-\[
-    p\_90 = R90 * p =
-    \begin{bmatrix}
-        0 & -1 & 0 \\
-        1 & 0  & 0 \\
-        0 & 0  & 1 \\
-    \end{bmatrix}
-    *
-    \begin{bmatrix}
-        1.5 \\
-        2.5 \\
-        1   \\
-    \end{bmatrix}
-    =
-    \begin{bmatrix}
-        -2.5 \\
-        1.5  \\
-        1    \\
-    \end{bmatrix}
-\]
-
-
-\[
-    p1\_90 = R90 * p1 =
-    \begin{bmatrix}
-        0 & -1 & 0 \\
-        1 & 0  & 0 \\
-        0 & 0  & 1 \\
-    \end{bmatrix}
-    *
-    \begin{bmatrix}
-        1 \\
-        1 \\
-        1 \\
-    \end{bmatrix}
-    =
-    \begin{bmatrix}
-        -1 \\
-        1  \\
-        1  \\
-    \end{bmatrix}
-\]
-
-
-
-
-\[
-    u\_90 = R90 * u =
-    \begin{bmatrix}
-        0 & -1 & 0 \\
-        1 & 0  & 0 \\
-        0 & 0  & 1 \\
-    \end{bmatrix}
-    *
-    \begin{bmatrix}
-        0.5 \\
-        1.5 \\
-        0   \\
-    \end{bmatrix}
-    =
-    \begin{bmatrix}
-        -1.5 \\
-        0.5  \\
-        0    \\
-    \end{bmatrix}
-\]
-
-Now for the translation:
-
-
-
-\[
-    T\_p\_90 = T * p\_90 =
-    \begin{bmatrix}
-        1 & 0 & 1  \\
-        0 & 1 & -2 \\
-        0 & 0 & 1  \\
-    \end{bmatrix}
-    *
-    \begin{bmatrix}
-        -2.5 \\
-        1.5  \\
-        1    \\
     \end{bmatrix}
     =
     \begin{bmatrix}
@@ -202,31 +159,25 @@ Now for the translation:
         -0.5 \\
         1    \\
     \end{bmatrix}
-\]
-
-
-
-\[
+    \Rightarrow
     p' =
     \begin{bmatrix}
         -1.5 \\
         -0.5 \\
     \end{bmatrix}
 \]
-
-
 \[
-    T\_p1\_90 = T * p1\_90 =
+    p_1' = M \cdot p_1 =
     \begin{bmatrix}
-        1 & 0 & 1  \\
-        0 & 1 & -2 \\
-        0 & 0 & 1  \\
+        0 & -1 & 1  \\
+        1 & 0  & -2 \\
+        0 & 0  & 1  \\
     \end{bmatrix}
-    *
+    \cdot
     \begin{bmatrix}
-        -1 \\
-        1  \\
-        1  \\
+        1 \\
+        1 \\
+        1 \\
     \end{bmatrix}
     =
     \begin{bmatrix}
@@ -234,32 +185,25 @@ Now for the translation:
         -1 \\
         1  \\
     \end{bmatrix}
-\]
-
-
-
-\[
-    p1' =
+    \Rightarrow
+    p_1' =
     \begin{bmatrix}
         0  \\
         -1 \\
     \end{bmatrix}
 \]
-
-
-
 \[
-    T\_u\_90 = T * u\_90 =
+    u' = M \cdot u =
     \begin{bmatrix}
-        1 & 0 & 1  \\
-        0 & 1 & -2 \\
-        0 & 0 & 1  \\
+        0 & -1 & 1  \\
+        1 & 0  & -2 \\
+        0 & 0  & 1  \\
     \end{bmatrix}
-    *
+    \cdot
     \begin{bmatrix}
-        -1.5 \\
-        0.5  \\
-        0    \\
+        0.5 \\
+        1.5 \\
+        0   \\
     \end{bmatrix}
     =
     \begin{bmatrix}
@@ -267,20 +211,16 @@ Now for the translation:
         0.5  \\
         0    \\
     \end{bmatrix}
-\]
-
-
-\[
+    \Rightarrow
     u' =
     \begin{bmatrix}
         -1.5 \\
         0.5  \\
     \end{bmatrix}
+    = p' - p_1'
 \]
 
-
-
-We can see that T had no effect on u\_90, this is because u\_90 is a vector and so is not affected by translation.
+We can see that T had no effect on $u'$, this is because $u'$ is a displacement vector and so is not affected by translation.
 
 \subsection*{Task 3 [1 points]}
 
