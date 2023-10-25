@@ -1,0 +1,689 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+
+
+
+
+
+
+
+\title{CG assignment 4}
+\author{Jeferson Morales Mariciano, Martin Lettry}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section*{Ex 1.1}
+
+\[
+    p = \begin{bmatrix}
+        1.5 \\
+        2.5 \\
+    \end{bmatrix}
+\]
+
+\[
+    p1 = \begin{bmatrix}
+        1 \\
+        1 \\
+    \end{bmatrix}
+\]
+
+
+\[
+    u = p - p1 =
+    u = \begin{bmatrix}
+        0.5 \\
+        1.5 \\
+    \end{bmatrix}
+\]
+
+\[
+    R90 =
+    \begin{bmatrix}
+        cos(90) & -sin(90) & 0 \\
+        sin(90) & cos(90)  & 0 \\
+        0       & 0        & 1 \\
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        0 & -1 & 0 \\
+        1 & 0  & 0 \\
+        0 & 0  & 1 \\
+    \end{bmatrix}
+\]
+
+
+\[
+    T = \begin{bmatrix}
+        1 & 0 & 1  \\
+        0 & 1 & -2 \\
+        0 & 0 & 1  \\
+    \end{bmatrix}
+\]
+
+
+\section*{Ex 1.2}
+Using homogeneous coordinates:
+
+\[
+    p1 = \begin{bmatrix}
+        1 \\
+        1 \\
+        1 \\
+    \end{bmatrix}
+\]
+
+\[
+    p = \begin{bmatrix}
+        1.5 \\
+        2.5 \\
+        1   \\
+    \end{bmatrix}
+\]
+
+\[
+    u = p - p1 =
+    u = \begin{bmatrix}
+        0.5 \\
+        1.5 \\
+        0   \\
+    \end{bmatrix}
+\]
+
+\[
+    p\_90 = R90 * p =
+    \begin{bmatrix}
+        0 & -1 & 0 \\
+        1 & 0  & 0 \\
+        0 & 0  & 1 \\
+    \end{bmatrix}
+    *
+    \begin{bmatrix}
+        1.5 \\
+        2.5 \\
+        1   \\
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        -2.5 \\
+        1.5  \\
+        1    \\
+    \end{bmatrix}
+\]
+
+
+\[
+    p1\_90 = R90 * p1 =
+    \begin{bmatrix}
+        0 & -1 & 0 \\
+        1 & 0  & 0 \\
+        0 & 0  & 1 \\
+    \end{bmatrix}
+    *
+    \begin{bmatrix}
+        1 \\
+        1 \\
+        1 \\
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        -1 \\
+        1  \\
+        1  \\
+    \end{bmatrix}
+\]
+
+
+
+
+\[
+    u\_90 = R90 * u =
+    \begin{bmatrix}
+        0 & -1 & 0 \\
+        1 & 0  & 0 \\
+        0 & 0  & 1 \\
+    \end{bmatrix}
+    *
+    \begin{bmatrix}
+        0.5 \\
+        1.5 \\
+        0   \\
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        -1.5 \\
+        0.5  \\
+        0    \\
+    \end{bmatrix}
+\]
+
+Now for the translation:
+
+
+
+\[
+    T\_p\_90 = T * p\_90 =
+    \begin{bmatrix}
+        1 & 0 & 1  \\
+        0 & 1 & -2 \\
+        0 & 0 & 1  \\
+    \end{bmatrix}
+    *
+    \begin{bmatrix}
+        -2.5 \\
+        1.5  \\
+        1    \\
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        -1.5 \\
+        -0.5 \\
+        1    \\
+    \end{bmatrix}
+\]
+
+
+
+\[
+    p' =
+    \begin{bmatrix}
+        -1.5 \\
+        -0.5 \\
+    \end{bmatrix}
+\]
+
+
+\[
+    T\_p1\_90 = T * p1\_90 =
+    \begin{bmatrix}
+        1 & 0 & 1  \\
+        0 & 1 & -2 \\
+        0 & 0 & 1  \\
+    \end{bmatrix}
+    *
+    \begin{bmatrix}
+        -1 \\
+        1  \\
+        1  \\
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        0  \\
+        -1 \\
+        1  \\
+    \end{bmatrix}
+\]
+
+
+
+\[
+    p1' =
+    \begin{bmatrix}
+        0  \\
+        -1 \\
+    \end{bmatrix}
+\]
+
+
+
+\[
+    T\_u\_90 = T * u\_90 =
+    \begin{bmatrix}
+        1 & 0 & 1  \\
+        0 & 1 & -2 \\
+        0 & 0 & 1  \\
+    \end{bmatrix}
+    *
+    \begin{bmatrix}
+        -1.5 \\
+        0.5  \\
+        0    \\
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        -1.5 \\
+        0.5  \\
+        0    \\
+    \end{bmatrix}
+\]
+
+
+\[
+    u' =
+    \begin{bmatrix}
+        -1.5 \\
+        0.5  \\
+    \end{bmatrix}
+\]
+
+
+
+We can see that T had no effect on u, this is because u is a vector and so is not affected by translation.
+
+\section*{Ex 1.3}
+
+\[
+    S =
+    \begin{bmatrix}
+        2 & 0 & 0 \\
+        0 & 2 & 0 \\
+        0 & 0 & 1 \\
+    \end{bmatrix}
+\]
+
+
+
+\[
+    S\_p = S * p =
+    \begin{bmatrix}
+        2 & 0 & 0 \\
+        0 & 2 & 0 \\
+        0 & 0 & 1 \\
+    \end{bmatrix}
+    *
+    \begin{bmatrix}
+        -1.5 \\
+        -0.5 \\
+        1    \\
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        -3 \\
+        -1 \\
+        1  \\
+    \end{bmatrix}
+\]
+\[
+    p'' =
+    \begin{bmatrix}
+        -3 \\
+        -1 \\
+        1  \\
+    \end{bmatrix}
+\]
+\[
+    S\_p1 = S * p1 =
+    \begin{bmatrix}
+        2 & 0 & 0 \\
+        0 & 2 & 0 \\
+        0 & 0 & 1 \\
+    \end{bmatrix}
+    *
+    \begin{bmatrix}
+        0  \\
+        -1 \\
+        0  \\
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        0  \\
+        -2 \\
+        1  \\
+    \end{bmatrix}
+\]
+\[
+    p1'' =
+    \begin{bmatrix}
+        0  \\
+        -2 \\
+    \end{bmatrix}
+\]
+\[
+    S\_u = S * u =
+    \begin{bmatrix}
+        2 & 0 & 0 \\
+        0 & 2 & 0 \\
+        0 & 0 & 1 \\
+    \end{bmatrix}
+    *
+    \begin{bmatrix}
+        -1.5 \\
+        0.5  \\
+        0    \\
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        -3 \\
+        1  \\
+        0  \\
+    \end{bmatrix}
+\]
+\[
+    u'' =
+    \begin{bmatrix}
+        -3 \\
+        1  \\
+    \end{bmatrix}
+\]
+\section*{Ex 1.4}
+
+\[
+    S^{-1} =
+    \begin{bmatrix}
+        1/2 & 0   & 0 \\
+        0   & 1/2 & 0 \\
+        0   & 0   & 1 \\
+    \end{bmatrix}
+\]
+
+
+\[
+    T^{-1} =
+    \begin{bmatrix}
+        1 & 0 & -1 \\
+        0 & 1 & 2  \\
+        0 & 0 & 1  \\
+    \end{bmatrix}
+\]
+
+
+\[
+    R\_90^{-1} =
+    \begin{bmatrix}
+        0  & 1 & 0 \\
+        -1 & 0 & 0 \\
+        0  & 0 & 1 \\
+    \end{bmatrix}
+\]
+
+
+\[
+    M = R\_90^{-1} * T^{-1} * S^{-1}
+    \begin{bmatrix}
+        0  & 1 & 0 \\
+        -1 & 0 & 0 \\
+        0  & 0 & 1 \\
+    \end{bmatrix}
+    *
+    \begin{bmatrix}
+        1 & 0 & -1 \\
+        0 & 1 & 2  \\
+        0 & 0 & 1  \\
+    \end{bmatrix}
+    *
+    \begin{bmatrix}
+        1/2 & 0   & 0 \\
+        0   & 1/2 & 0 \\
+        0   & 0   & 1 \\
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        0    & 1/2 & 2 \\
+        -1/2 & 0   & 1 \\
+        0    & 0   & 1 \\
+    \end{bmatrix}
+\]
+
+
+
+\[
+    M * p'' =
+    \begin{bmatrix}
+        0    & 1/2 & 2 \\
+        -1/2 & 0   & 1 \\
+        0    & 0   & 1 \\
+    \end{bmatrix}
+    *
+    \begin{bmatrix}
+        -3 \\
+        -1 \\
+        1  \\
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        1.5 \\
+        2.5 \\
+        1   \\
+    \end{bmatrix}
+    == p
+\]
+
+
+
+\[
+    M * p1'' =
+    \begin{bmatrix}
+        0    & 1/2 & 2 \\
+        -1/2 & 0   & 1 \\
+        0    & 0   & 1 \\
+    \end{bmatrix}
+    *
+    \begin{bmatrix}
+        0  \\
+        -2 \\
+        1  \\
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        1 \\
+        1 \\
+        1 \\
+    \end{bmatrix}
+    == p1
+\]
+
+\[
+    M * u'' =
+    \begin{bmatrix}
+        0    & 1/2 & 2 \\
+        -1/2 & 0   & 1 \\
+        0    & 0   & 1 \\
+    \end{bmatrix}
+    *
+    \begin{bmatrix}
+        -3 \\
+        1  \\
+        0  \\
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        0.5 \\
+        1.5 \\
+        0   \\
+    \end{bmatrix}
+    == u
+\]
+
+
+
+\section*{Ex 2}
+
+\[
+    p1 = \begin{bmatrix}
+        6 \\
+        0 \\
+        4 \\
+    \end{bmatrix}
+\]
+
+\[
+    p2 = \begin{bmatrix}
+        2 \\
+        0 \\
+        0 \\
+    \end{bmatrix}
+\]
+
+\[
+    p3 = \begin{bmatrix}
+        2 \\
+        4 \\
+        4 \\
+    \end{bmatrix}
+\]
+
+\[
+    p = \begin{bmatrix}
+        4 \\
+        1 \\
+        3 \\
+    \end{bmatrix}
+\]
+
+\[
+    area\_of\_triangle = t = (p3 - p1) * (p2 - p1) =
+    \begin{bmatrix}
+        16  \\
+        16  \\
+        -16 \\
+    \end{bmatrix}
+\]
+
+\[
+    normal\_of\_sub\_triangle\_1 = t1 = (p3 - p) * (p1 - p) =
+    \begin{bmatrix}
+        4  \\
+        4  \\
+        -4 \\
+    \end{bmatrix}
+\]
+
+\[
+    normal\_of\_sub\_triangle\_2 = t2 = (p1 - p) * (p2 - p) =
+    \begin{bmatrix}
+        4  \\
+        4  \\
+        -4 \\
+    \end{bmatrix}
+\]
+
+
+\[
+    normal\_of\_sub\_triangle\_3 = t3 = (p2 - p) * (p3 - p) =
+    \begin{bmatrix}
+        8  \\
+        8  \\
+        -8 \\
+    \end{bmatrix}
+\]
+
+
+
+
+We then compute the dot product between the sub triangles and t
+\\
+dot(t1, t) = 192 \\
+dot(t2, t) = 192 \\
+dot(t3, t) = 384 \\
+Because all these dot products are positive, we can confirm that the point is indeed inside the triangle.
+
+
+
+
+\section*{Ex 3}
+
+
+
+To demonstrate that the centroid of a triangle divides its medians in a 2:1 ratio using barycentric coordinates, let's rephrase the explanation:
+
+Let's begin by visualizing a triangle with vertices $A$, $B$, and $C$, and we'll employ a barycentric coordinate system to analyze it. In this system, any point in the plane can be represented as $(\alpha, \beta, \gamma)$ with the constraint that $\alpha + \beta + \gamma$ equals 1.
+
+Now, let's focus on the three medians of the triangle, denoted as $AM_a$, $BM_b$, and $CM_c$, where $M$ denotes the midpoint of the respective side. The barycentric coordinates of these medians can be expressed as follows:
+\\
+- For $AM_a$, we have $(\alpha, \beta, \gamma)$ with the condition that $\beta = \gamma$. \\
+- Similarly, for $BM_b$, the barycentric coordinates are $(\alpha, \beta, \gamma)$ with $\alpha = \gamma$. \\
+- And for $CM_c$, they are $(\alpha, \beta, \gamma)$ with $\alpha = \beta$. \\
+
+Now, the centroid of the triangle, often represented as $G$, is the point where these medians intersect. We can summarize the conditions for $G$ as follows:
+\\
+- $\alpha + \beta + \gamma = 1$ (This is the general constraint for barycentric coordinates). \\
+- $\beta = \gamma$ (from the $AM_a$ median). \\
+- $\alpha = \gamma$ (from the $BM_b$ median). \\
+- $\alpha = \beta$ (from the $CM_c$ median). \\
+
+Solving this system of equations, we find that $\alpha = \beta = \gamma = 1/3$.
+
+In other words, the barycentric coordinates for the centroid $G$ are $\left(1/3, 1/3, 1/3\right)$. This means that the centroid divides each of the medians in a 1:2 ratio (1 part to the centroid, 2 parts to the vertex). This can also be expressed as a 2:1 ratio (2 parts to the vertex, 1 part to the centroid), and it holds for any triangle, illustrating the desired result.
+
+
+
+
+
+\section*{Ex 4}
+We can see that, when dealing with a given homogeneous coordinate $v = \begin{bmatrix} a \\ b \\ c \end{bmatrix}$, the corresponding Cartesian coordinate $f$ can be determined by dividing each component by the value of the third dimension and omitting that dimension. This operation yields $f = \begin{bmatrix} a/c \\ b/c \end{bmatrix}$.
+
+We can see that for any point $p$, its transformed version can be represented as $p'' = \begin{bmatrix} 1 \\ y/x \end{bmatrix}$. This point transformation can be shown using the following matrix multiplication:
+
+\[
+    p'' = \begin{bmatrix} a & b & c \\ d & e & f \\ g & h & i \end{bmatrix} \cdot \begin{bmatrix} p_x \\ p_y \\ p_z \end{bmatrix} = \begin{bmatrix} 1 \\ p_y/p_x \\ 1 \end{bmatrix}
+\]
+
+To achieve $p''_x = 1$, we need to simplify $p_x$ by dividing it by itself. Converting homogeneous coordinates to Cartesian requires dividing all elements by the third element, we can conveniently set $p_z$ equal to $p_x$ to facilitate this simplification:
+
+\[
+    p'' = \begin{bmatrix} 1 & b & c \\ d & e & f \\ 1 & h & i \end{bmatrix} \cdot \begin{bmatrix} p_x \\ p_y \\ p_x \end{bmatrix} = \begin{bmatrix} p_x/p_x \\ 1/p_x \\ p_x / p_x \end{bmatrix} = \begin{bmatrix} 1 \\ 1 / p_x \\ 1 \end{bmatrix}
+\]
+
+To preserve the value of $y$, we set e = 1, as shown below:
+
+\[
+    p'' = \begin{bmatrix} 1 & b & c \\ d & 1 & f \\ 1 & h & i \end{bmatrix} \cdot \begin{bmatrix} p_x \\ p_y \\ p_x \end{bmatrix} = \begin{bmatrix} 1 \\ p_y / p_x \\ 1 \end{bmatrix}
+\]
+
+The transformation matrix can be represented as $ S = \begin{bmatrix} 1 & 0 & 0 \\ 0 & 1 & 0 \\ 1 & 0 & 0 \end{bmatrix} $ for all $p_x \in \mathbb{R}$, $p_x \neq 0$.
+
+When a point $p$ lies on the y-axis (i.e., $p_x = 0$), there is no valid solution, as $p''_y$ would involve division by zero.
+
+
+
+
+\section*{Bonus exercise [2 points]}
+
+\textbf{Consider the same task as in Exercise 4, but the line onto which the points are projected can be now arbitrary,
+    and it is defined by a line equation $y = ax + b$, where $a, b \in \mathbb{R}$ are constants. Derive the matrix $M$ for this
+    more general case.} \\
+
+Represent the line equation as $r_1 : y = ax + b$ and put it in system with the previous exercise $4$ answer.
+
+\begin{equation*}
+    \begin{cases}
+        r_1: y = \frac{p_y}{p_x} x \\
+        y = ax + b
+    \end{cases}
+    \rightarrow
+    \begin{cases}
+        r_1: y = \frac{p_y}{p_x} x \\
+        \frac{p_y}{p_x} x = ax + b
+    \end{cases}
+    \rightarrow
+    \begin{cases}
+        x = \frac{bp_x}{p_y - ap_x} \\
+        y = \frac{bp_y}{p_y - ap_x}
+    \end{cases}
+\end{equation*}
+
+From this we know that:
+\[
+    \frac{m_{11}x + m_{12}y + m_{13}}{m_{31}x + m_{32}y + m_{33}} = \frac{bp_x}{p_y - ap_x}
+\]
+and
+\[
+    \frac{m_{21}x + m_{22}y + m_{23}}{m_{31}x + m_{32}y + m_{33}} = \frac{bp_y}{p_y - ap_x}
+\]
+
+Thus we obtained that:
+\[
+    \begin{bmatrix}
+        m_{11} & m_{12} & m_{13} \\
+        m_{21} & m_{22} & m_{23} \\
+        m_{31} & m_{32} & m_{33}
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        b  & 0 & 0 \\
+        0  & b & 0 \\
+        -a & 1 & 0
+    \end{bmatrix}
+\]
+
+
+
+
+
+\end{document}
