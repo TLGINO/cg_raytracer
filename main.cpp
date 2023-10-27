@@ -1,6 +1,6 @@
 /**
-* @file main.cpp
-*/
+ * @file main.cpp
+ */
 
 #include <iostream>
 #include <fstream>
@@ -12,26 +12,27 @@
 #include "Image.h"
 #include "Material.h"
 
-#define PI atan(1)*4
+#define PI atan(1) * 4
 
-using glm::vec3;
+using glm::distance;
 using glm::normalize;
 using glm::reflect;
-using glm::distance;
+using glm::vec3;
 
 /**
  * Class representing a single ray.
  */
-class Ray {
+class Ray
+{
 public:
 	vec3 origin;
 	vec3 direction;
 
-    /**
-     * Constructor of the ray
+	/**
+	 * Constructor of the ray
 	 * @param origin Origin of the ray
 	 * @param direction Direction of the ray
-     */
+	 */
 	Ray(vec3 origin, vec3 direction) : origin(origin), direction(direction) {}
 };
 
@@ -40,28 +41,31 @@ class Object;
 /**
  * Structure representing the event of hitting an object
  */
-struct Hit {
-	bool hit = false;	// state if intersection with an object
-	vec3 normal;		// Normal vector of the intersected object at the intersection point
-	vec3 intersection;  // Point of Intersection
-	float distance = INFINITY;	// Distance from the origin of the ray to the intersection point
-	Object * object = 0;	// pointer to the intersected object
-	vec2 uv;	// Coordinates for computing the texture (texture coordinates)
+struct Hit
+{
+	bool hit = false;		   // state if intersection with an object
+	vec3 normal;			   // Normal vector of the intersected object at the intersection point
+	vec3 intersection;		   // Point of Intersection
+	float distance = INFINITY; // Distance from the origin of the ray to the intersection point
+	Object *object = 0;		   // pointer to the intersected object
+	vec2 uv;				   // Coordinates for computing the texture (texture coordinates)
 };
 
 /**
  * General class for the object
  */
-class Object {
+class Object
+{
 public:
 	vec3 color = vec3(0.0f);
 	Material material; // Structure describing the material of the object
 
-    /** A function computing an intersection, which returns the structure Hit */
+	/** A function computing an intersection, which returns the structure Hit */
 	virtual Hit intersect(Ray ray) = 0;
 
 	/** Function that returns the material struct of the object*/
-	Material getMaterial() const {
+	Material getMaterial() const
+	{
 		return material;
 	}
 
@@ -69,7 +73,8 @@ public:
 	 * Function that set the material
 	 * @param material A structure describing the material of the object
 	 */
-	void setMaterial(Material m) {
+	void setMaterial(Material m)
+	{
 		this->material = m;
 	}
 };
@@ -77,13 +82,13 @@ public:
 /**
  * Implementation of the class Object for sphere shape.
  */
-class Sphere : public Object {
+class Sphere : public Object
+{
 private:
 	float radius;
 	vec3 center;
 
 public:
-
 	/**
 	 * Constructor of the sphere
 	 * @param radius Radius of the sphere
@@ -91,34 +96,39 @@ public:
 	 * @param color Color of the sphere
 	 */
 	Sphere(float radius, vec3 center, vec3 color)
-    : radius(radius), center(center) {
+		: radius(radius), center(center)
+	{
 		this->color = color;
 	}
 
 	Sphere(float radius, vec3 center, Material material)
-    : radius(radius), center(center) {
+		: radius(radius), center(center)
+	{
 		this->material = material;
 	}
 
 	/**
 	 * Implementation of the intersection function
 	 */
-	Hit intersect(Ray ray) {
+	Hit intersect(Ray ray)
+	{
 		vec3 c = center - ray.origin;
 		float cdotc = glm::dot(c, c);
 		float cdotd = glm::dot(c, ray.direction);
 		Hit hit;
 		float D = 0;
-		if (cdotc > cdotd * cdotd) {
+		if (cdotc > cdotd * cdotd)
+		{
 			D = sqrt(cdotc - cdotd * cdotd);
 		}
 
-		if (D > radius) {
-            hit.hit = false;
-            return hit;
-        }
+		if (D > radius)
+		{
+			hit.hit = false;
+			return hit;
+		}
 
-        hit.hit = true;
+		hit.hit = true;
 		float t1 = cdotd - sqrt(radius * radius - D * D);
 		float t2 = cdotd + sqrt(radius * radius - D * D);
 
@@ -126,7 +136,8 @@ public:
 		if (t < 0)
 			t = t2;
 
-		if (t < 0) {
+		if (t < 0)
+		{
 			hit.hit = false;
 			return hit;
 		}
@@ -136,72 +147,77 @@ public:
 		hit.distance = distance(ray.origin, hit.intersection);
 		hit.object = this;
 
-        // Ex2: computing texture coordinates for the sphere.
-        hit.uv.s = (asin(hit.normal.y) + M_PI/2) / M_PI;
-        hit.uv.t = (atan2(hit.normal.z, hit.normal.x) + M_PI) / (2 * M_PI);
+		// Ex2: computing texture coordinates for the sphere.
+		hit.uv.s = (asin(hit.normal.y) + M_PI / 2) / M_PI;
+		hit.uv.t = (atan2(hit.normal.z, hit.normal.x) + M_PI) / (2 * M_PI);
 		return hit;
 	}
 };
 
-class Plane : public Object {
+class Plane : public Object
+{
 private:
-    vec3 point = vec3(0);
+	vec3 point = vec3(0);
 	vec3 normal = vec3(0, 0, 1);
 
 public:
 	Plane(vec3 point, vec3 normal) : point(point), normal(normal) {}
-	Plane(vec3 point, vec3 normal, Material material) : point(point), normal(normal) {
+	Plane(vec3 point, vec3 normal, Material material) : point(point), normal(normal)
+	{
 		this->material = material;
 	}
 
-    /**
-     * Ex1: Plane-ray intersection
-     */
-	Hit intersect(Ray ray) {
+	/**
+	 * Ex1: Plane-ray intersection
+	 */
+	Hit intersect(Ray ray)
+	{
 		float ray_dot_n = dot(point - ray.origin, normal);
-        float d_dot_N = dot(ray.direction, normal);
+		float d_dot_N = dot(ray.direction, normal);
 
-        // cos b of angle parallel to plane
-        if (d_dot_N == 0)
-            return Hit();
+		// cos b of angle parallel to plane
+		if (d_dot_N == 0)
+			return Hit();
 
-        float t = ray_dot_n / d_dot_N;
+		float t = ray_dot_n / d_dot_N;
 
-        // intersection behind ray origin
+		// intersection behind ray origin
 		if (t < 0)
 			return Hit();
 
-		Hit hit {
-            .hit = true,
-            .normal = normalize(normal),
-            .intersection = ray.origin + t * ray.direction,
-            .distance = distance(ray.origin, hit.intersection),
-            .object = this,
-            .uv = {0, 0},
-        };
-        return hit;
-    }
+		Hit hit{
+			.hit = true,
+			.normal = normalize(normal),
+			.intersection = ray.origin + t * ray.direction,
+			.distance = distance(ray.origin, hit.intersection),
+			.object = this,
+			.uv = {0, 0},
+		};
+		return hit;
+	}
 };
 
 /**
  * Light class
  */
-class Light {
+class Light
+{
 public:
 	vec3 position;
 	vec3 color;
 
-    Light(vec3 position, vec3 color) : position(position), color(color) {}
+	Light(vec3 position, vec3 color) : position(position), color(color) {}
 
-	explicit Light(vec3 position) {
-        Light(position, vec3(1.0f));
+	explicit Light(vec3 position)
+	{
+		Light(position, vec3(1.0f));
 	}
 };
 
 // GLOBAL VARIABLES
-vector<Light *> lights;     // list of lights in the scene
+vector<Light *> lights; // list of lights in the scene
 vec3 ambient_light(0.5f);
-vector<Object *> objects;   // list of all objects in the scene
+vector<Object *> objects; // list of all objects in the scene
 
 /**
  * Function for computing color of an object according to the Phong Model
@@ -211,41 +227,42 @@ vector<Object *> objects;   // list of all objects in the scene
  * @param view_direction A normalized direction from the point to the viewer/camera
  * @param material A material structure representing the material of the object
  */
-vec3 PhongModel(vec3 point, vec3 normal, vec2 uv, vec3 view_direction, Material material) {
+vec3 PhongModel(vec3 point, vec3 normal, vec2 uv, vec3 view_direction, Material material)
+{
 	vec3 color(0.0f);
 
-    vec3 I_diffuse = vec3(0), I_specular = vec3(0),
-    // ambient illumination
-    I_ambient = material.ambient * ambient_light;
+	vec3 I_diffuse = vec3(0), I_specular = vec3(0),
+		 // ambient illumination
+		I_ambient = material.ambient * ambient_light;
 
-	for (Light*& l : lights) {
-        /* Ex3: Modify the code by adding attenuation of the light due to distance
-         * from the intersection point to the light source
-         */
-        float r = distance(point, l->position);
-        float attenuation = 1 / pow(max(r, 0.5f), 2);
+	for (Light *&l : lights)
+	{
+		/* Ex3: Modify the code by adding attenuation of the light due to distance
+		 * from the intersection point to the light source
+		 */
+		float r = distance(point, l->position);
+		float attenuation = 1 / pow(max(r, 0.5f), 2);
 
-        // DIFFUSE REFLECTION:
-        // from diffuse reflection point, cos of angle of surface normal n and direction from point to light source
+		// DIFFUSE REFLECTION:
+		// from diffuse reflection point, cos of angle of surface normal n and direction from point to light source
 		vec3 l_direction = normalize(l->position - point);
-        float cos_phi = glm::clamp(dot(normal, l_direction), 0.0f, 1.0f); // already normalized
+		float cos_phi = glm::clamp(dot(normal, l_direction), 0.0f, 1.0f); // already normalized
 
-        /* Ex2: Modify the code by adding texturing,
-         * i.e. diffuse color should be computed using one of the texture functions
-         * according to the texture coordinates stored in the uv variable.
-         * Make sure that the code works also for objects that should not have texture.
-         */
-        I_diffuse += material.diffuse * cos_phi * l->color * attenuation
-                * (material.texture ? material.texture(uv) : vec3(1.0f));
+		/* Ex2: Modify the code by adding texturing,
+		 * i.e. diffuse color should be computed using one of the texture functions
+		 * according to the texture coordinates stored in the uv variable.
+		 * Make sure that the code works also for objects that should not have texture.
+		 */
+		I_diffuse += material.diffuse * cos_phi * l->color * attenuation * (material.texture ? material.texture(uv) : vec3(1.0f));
 
-        // SPECULAR HIGHLIGHT:
+		// SPECULAR HIGHLIGHT:
 		vec3 r_direction = reflect(-l_direction, normal);
-        float k = max(material.shininess, 1.0f);
-        float cos_alpha = glm::clamp(dot(view_direction, r_direction), 0.0f, 1.0f);
-        I_specular += material.specular * pow(cos_alpha, k) * l->color * attenuation;
+		float k = max(material.shininess, 1.0f);
+		float cos_alpha = glm::clamp(dot(view_direction, r_direction), 0.0f, 1.0f);
+		I_specular += material.specular * pow(cos_alpha, k) * l->color * attenuation;
 	}
 
-    color = I_ambient + I_diffuse + I_specular;
+	color = I_ambient + I_diffuse + I_specular;
 	return clamp(color, vec3(0), vec3(1));
 }
 
@@ -254,82 +271,91 @@ vec3 PhongModel(vec3 point, vec3 normal, vec2 uv, vec3 view_direction, Material 
  * @param ray Ray that should be traced through the scene
  * @return Color at the intersection point
  */
-vec3 trace_ray(Ray ray) {
+vec3 trace_ray(Ray ray)
+{
 	Hit closest_hit;
 
-	for (Object*& o : objects) {
+	for (Object *&o : objects)
+	{
 		Hit hit = o->intersect(ray);
 		if (hit.hit && hit.distance < closest_hit.distance)
 			closest_hit = hit;
 	}
 
 	return !closest_hit.hit
-    ? vec3(0.0f)
-    : PhongModel(closest_hit.intersection,
-                 closest_hit.normal,
-                 closest_hit.uv,
-                 normalize(-ray.direction),
-                 closest_hit.object->getMaterial());
+			   ? vec3(0.0f)
+			   : PhongModel(closest_hit.intersection,
+							closest_hit.normal,
+							closest_hit.uv,
+							normalize(-ray.direction),
+							closest_hit.object->getMaterial());
 }
 
 /**
  * Function defining the scene
  */
-void sceneDefinition() {
-    vec3 color_red {1.5f, 0.3f, 0.3f};
-    vec3 color_blue {0.4f, 0.4f, 1.5f};
-    vec3 color_green {0.5f, 1.5f, 0.5f};
+void sceneDefinition()
+{
+	vec3 color_red{1.5f, 0.3f, 0.3f};
+	vec3 color_blue{0.4f, 0.4f, 1.5f};
+	vec3 color_green{0.5f, 1.5f, 0.5f};
 
-	Material red_specular {
-        .ambient = {0.01f, 0.03f, 0.03f},
-        .diffuse = color_red,
-        .specular = vec3(0.5f),
-        .shininess = 10.0f,
-    };
+	Material red_specular{
+		.ambient = {0.01f, 0.03f, 0.03f},
+		.diffuse = color_red,
+		.specular = vec3(0.5f),
+		.shininess = 10.0f,
+	};
 
-    Material blue_shiny {
-        .ambient = {0.07f, 0.07f, 0.1f},
-        .diffuse = color_blue,
-        .specular = vec3(0.6f),
-        .shininess = 100.0f,
-    };
+	Material blue_shiny{
+		.ambient = {0.07f, 0.07f, 0.1f},
+		.diffuse = color_blue,
+		.specular = vec3(0.6f),
+		.shininess = 100.0f,
+	};
 
-    Material green_diffuse {
-        .ambient = {0.07f, 0.09f, 0.07f},
-        .diffuse = color_green,
-    };
+	Material green_diffuse{
+		.ambient = {0.07f, 0.09f, 0.07f},
+		.diffuse = color_green,
+	};
 
-	Material material_rainbow {
-        .texture = &rainbowTexture,
-    };
+	Material material_rainbow{
+		.texture = &rainbowTexture,
+	};
 
-    // spheres
-    objects.push_back(new Sphere(0.5f, {-1.0f, -2.5f, 6.0f}, red_specular));
+	// spheres
+	objects.push_back(new Sphere(0.5f, {-1.0f, -2.5f, 6.0f}, red_specular));
 	objects.push_back(new Sphere(1.0f, {1.0f, -2.0f, 8.0f}, blue_shiny));
 	objects.push_back(new Sphere(1.0f, {3.0f, -2.0f, 6.0f}, green_diffuse));
 	objects.push_back(new Sphere(6.0f, {-5.0f, 3.5f, 20.0f}, material_rainbow));
 
-    // planes
-    objects.push_back(new Plane({0.0f, 0.0f, -0.01f},
-                                {0.0f, 0.0f, 1.0f},
-                                Material())); // back
-    objects.push_back(new Plane({15.0f, 0.0f, 0.0f},
-                                {-1.0f, 0.0f, 0.0f},
-                                { .diffuse = {0.6f, 0.6f, 1.0f}, })); // right
-    objects.push_back(new Plane({0.0f, 0.0f, 30.0f},
-                                {0.0f, 0.0f, -1.0f},
-                                { .diffuse = {0.5f, 1.0f, 0.5f}, })); // front
+	// planes
+	objects.push_back(new Plane({0.0f, 0.0f, -0.01f},
+								{0.0f, 0.0f, 1.0f},
+								Material())); // back
+	objects.push_back(new Plane({15.0f, 0.0f, 0.0f},
+								{-1.0f, 0.0f, 0.0f},
+								{
+									.diffuse = {0.6f, 0.6f, 1.0f},
+								})); // right
+	objects.push_back(new Plane({0.0f, 0.0f, 30.0f},
+								{0.0f, 0.0f, -1.0f},
+								{
+									.diffuse = {0.5f, 1.0f, 0.5f},
+								})); // front
 	objects.push_back(new Plane({-15.0f, 0.0f, 0.0f},
-                                {1.0f, 0.0f, 0.0f},
-                                { .diffuse = {0.6f, 0.4f, 0.4f}, })); // left
+								{1.0f, 0.0f, 0.0f},
+								{
+									.diffuse = {0.6f, 0.4f, 0.4f},
+								})); // left
 	objects.push_back(new Plane({0.0f, 27.0f, 0.0f},
-                                {0.0f, -1.0f, 0.0f},
-                                Material())); // top
+								{0.0f, -1.0f, 0.0f},
+								Material())); // top
 	objects.push_back(new Plane({0.0f, -3.0f, 0.0f},
-                                {0.0f, 1.0f, 0.0f},
-                                Material())); // bottom
+								{0.0f, 1.0f, 0.0f},
+								Material())); // bottom
 
-    // lights
+	// lights
 	lights.push_back(new Light({0.0f, 26.0f, 5.0f}, vec3(150.0f)));
 	lights.push_back(new Light({0.0f, 1.0f, 12.0f}, vec3(25.0f)));
 	lights.push_back(new Light({0.0f, 5.0f, 1.0f}, vec3(40.0f)));
@@ -342,18 +368,20 @@ void sceneDefinition() {
  * @param intensity Input intensity
  * @return Tone mapped intensity in range [0,1]
  */
-vec3 toneMapping(vec3 intensity) {
+vec3 toneMapping(vec3 intensity)
+{
 	float alpha = 0.8f, beta = 1.2f, gamma = 2.13f;
-    vec3 I_tone_mapped = alpha * pow(intensity, vec3(beta));
-    vec3 I_gamma_corrected = min(pow(I_tone_mapped, vec3(1/gamma)), 1.0f);
+	vec3 I_tone_mapped = alpha * pow(intensity, vec3(beta));
+	vec3 I_gamma_corrected = min(pow(I_tone_mapped, vec3(1 / gamma)), 1.0f);
 	return clamp(I_gamma_corrected, vec3(0.0f), vec3(1.0f));
 }
 
-int main(int argc, const char *argv[]) {
+int main(int argc, const char *argv[])
+{
 	clock_t t = clock(); // keeping the time of the rendering
-	int width = 1024;
-	int height = 768;
-	float fov = 90;	  // field of view
+	int width = 512;
+	int height = 384;
+	float fov = 90; // field of view
 	sceneDefinition();
 	Image image(width, height); // Create an image where we will store the result
 	float s = 2 * tan(0.5 * fov / 180 * M_PI) / width;
@@ -361,7 +389,8 @@ int main(int argc, const char *argv[]) {
 	float Y = s * height / 2;
 
 	for (int i = 0; i < width; i++)
-		for (int j = 0; j < height; j++) {
+		for (int j = 0; j < height; j++)
+		{
 			float dx = X + i * s + s / 2;
 			float dy = Y - j * s - s / 2;
 			vec3 origin(0);
