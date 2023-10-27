@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <cmath>
 #include <ctime>
 #include <vector>
@@ -197,6 +198,146 @@ public:
 	}
 };
 
+class Triangle : public Object
+{
+private:
+	vec3 point_a;
+	vec3 point_b;
+	vec3 point_c;
+
+public:
+	Triangle(vec3 point_a,
+			 vec3 point_b,
+			 vec3 point_c)
+	{
+		this->point_a = point_a;
+		this->point_b = point_b;
+		this->point_c = point_c;
+	}
+
+	Hit intersect(Ray ray)
+	{
+		// HERE MODIFY
+		vec3 e1 = point_b - point_a;
+		vec3 e2 = point_c - point_a;
+
+		cout << "A" << endl;
+		cout << this->point_a.x << endl;
+		cout << this->point_a.y << endl;
+		cout << this->point_a.z << endl;
+
+		cout << "B" << endl;
+		cout << this->point_b.x << endl;
+		cout << this->point_b.y << endl;
+		cout << this->point_b.z << endl;
+		cout << "C" << endl;
+		cout << this->point_c.x << endl;
+		cout << this->point_c.y << endl;
+		cout << this->point_c.z << endl;
+		vec3 h = glm::cross(ray.direction, e2);
+		float a = glm::dot(e1, h);
+
+		if (a > -0.00001f && a < 0.00001f)
+			return Hit(); // The ray is parallel to the triangle
+
+		float f = 1.0f / a;
+		vec3 s = ray.origin - point_a;
+		float u = f * glm::dot(s, h);
+
+		if (u < 0.0f || u > 1.0f)
+			return Hit();
+
+		vec3 q = glm::cross(s, e1);
+		float v = f * glm::dot(ray.direction, q);
+
+		if (v < 0.0f || u + v > 1.0f)
+			return Hit();
+
+		float t = f * glm::dot(e2, q);
+
+		if (t > 0.00001f)
+		{
+			// Intersection point is valid
+			vec3 intersection = ray.origin + t * ray.direction;
+
+			// Calculate the normal without using cross
+			vec3 normal = normalize(e1 - e2);
+
+			Hit hit{
+				.hit = true,
+				.normal = normal,
+				.intersection = intersection,
+				.distance = t,
+				.object = this,
+				.uv = {u, v},
+			};
+
+			return hit;
+		}
+
+		return Hit(); // No intersection
+	}
+};
+
+class Mesh : public Object
+{
+private:
+	vector<Triangle> triangles;
+	string fname;
+
+public:
+	Mesh(string fname)
+	{
+		this->fname = fname;
+		this->load_mesh();
+	}
+
+	void load_mesh()
+	{
+		ifstream objFile(this->fname);
+		string line;
+		vector<vec3> positions;
+
+		while (getline(objFile, line))
+		{
+			istringstream stream(line);
+			string token;
+			stream >> token;
+
+			if (token == "v")
+			{
+				float x, y, z;
+				stream >> x >> y >> z;
+				positions.push_back(glm::vec3(x, y, z));
+			}
+			if (token == "f")
+			{
+				float i, j, k;
+				stream >> i >> j >> k;
+
+				Triangle t = Triangle(positions[i], positions[j], positions[k]);
+				this->triangles.push_back(t);
+			}
+		}
+		objFile.close();
+	}
+
+	Hit intersect(Ray ray)
+	{
+		// Does this logic make sense?
+		for (Triangle t : this->triangles)
+		{
+			Hit h = t.intersect(ray);
+			if (h.hit)
+			{
+				cout << "HERE 1" << endl;
+				return h;
+			}
+		}
+		return Hit();
+	}
+};
+
 /**
  * Light class
  */
@@ -322,6 +463,9 @@ void sceneDefinition()
 	Material material_rainbow{
 		.texture = &rainbowTexture,
 	};
+
+	// TEST
+	objects.push_back(new Mesh("./meshes/armadillo.obj"));
 
 	// spheres
 	objects.push_back(new Sphere(0.5f, {-1.0f, -2.5f, 6.0f}, red_specular));
