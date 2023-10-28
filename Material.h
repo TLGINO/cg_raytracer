@@ -14,12 +14,13 @@
 /**
  * Structure describing a material of an object
  */
-struct Material {
-    vec3 ambient = vec3(0.0f);   // Ambient color of the object
-    vec3 diffuse = vec3(1.0f);   // Color of the object
-    vec3 specular = vec3(0.0f);  // Specular color of the object
-    float shininess = 0.0f; // Exponent for Phong model
-    vec3 (* texture)(vec2 uv) = nullptr;
+struct Material
+{
+    vec3 ambient = vec3(0.0f);  // Ambient color of the object
+    vec3 diffuse = vec3(1.0f);  // Color of the object
+    vec3 specular = vec3(0.0f); // Specular color of the object
+    float shininess = 0.0f;     // Exponent for Phong model
+    vec3 (*texture)(vec2 uv) = nullptr;
 };
 
 #endif /* Material_h */

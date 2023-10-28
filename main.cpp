@@ -204,78 +204,92 @@ private:
 	vec3 point_a;
 	vec3 point_b;
 	vec3 point_c;
+	const float EPSILON = 1e-6;
 
 public:
 	Triangle(vec3 point_a,
 			 vec3 point_b,
-			 vec3 point_c)
+			 vec3 point_c,
+			 Material material)
 	{
 		this->point_a = point_a;
 		this->point_b = point_b;
 		this->point_c = point_c;
+		this->material = material;
 	}
-
 	Hit intersect(Ray ray)
 	{
-		// HERE MODIFY
+		Hit hit;
+
 		vec3 e1 = point_b - point_a;
 		vec3 e2 = point_c - point_a;
+		vec3 h = cross(ray.direction, e2);
+		float a = dot(e1, h);
 
-		cout << "A" << endl;
-		cout << this->point_a.x << endl;
-		cout << this->point_a.y << endl;
-		cout << this->point_a.z << endl;
-
-		cout << "B" << endl;
-		cout << this->point_b.x << endl;
-		cout << this->point_b.y << endl;
-		cout << this->point_b.z << endl;
-		cout << "C" << endl;
-		cout << this->point_c.x << endl;
-		cout << this->point_c.y << endl;
-		cout << this->point_c.z << endl;
-		vec3 h = glm::cross(ray.direction, e2);
-		float a = glm::dot(e1, h);
-
-		if (a > -0.00001f && a < 0.00001f)
-			return Hit(); // The ray is parallel to the triangle
-
-		float f = 1.0f / a;
-		vec3 s = ray.origin - point_a;
-		float u = f * glm::dot(s, h);
-
-		if (u < 0.0f || u > 1.0f)
-			return Hit();
-
-		vec3 q = glm::cross(s, e1);
-		float v = f * glm::dot(ray.direction, q);
-
-		if (v < 0.0f || u + v > 1.0f)
-			return Hit();
-
-		float t = f * glm::dot(e2, q);
-
-		if (t > 0.00001f)
+		if (a > -EPSILON && a < EPSILON)
 		{
-			// Intersection point is valid
-			vec3 intersection = ray.origin + t * ray.direction;
+			// Ray is parallel to the triangle plane
+			hit.hit = false;
+			return hit;
+		}
 
-			// Calculate the normal without using cross
-			vec3 normal = normalize(e1 - e2);
+		float f = 1.0 / a;
+		vec3 s = ray.origin - point_a;
+		float u = f * dot(s, h);
 
-			Hit hit{
-				.hit = true,
-				.normal = normal,
-				.intersection = intersection,
-				.distance = t,
-				.object = this,
-				.uv = {u, v},
-			};
+		if (u < 0.0 || u > 1.0)
+		{
+			hit.hit = false;
+			return hit;
+		}
+
+		vec3 q = cross(s, e1);
+		float v = f * dot(ray.direction, q);
+
+		if (v < 0.0 || u + v > 1.0)
+		{
+			hit.hit = false;
+			return hit;
+		}
+
+		float t = f * dot(e2, q);
+
+		if (t > EPSILON)
+		{
+			hit.hit = true;
+			hit.intersection = ray.origin + t * ray.direction;
+			hit.normal = normalize(cross(e1, e2));
+			hit.distance = distance(ray.origin, hit.intersection);
+			hit.object = this;
+
+			// Compute texture coordinates (uv)
+			vec3 v0 = point_a;
+			vec3 edge1 = point_b - point_a;
+			vec3 edge2 = point_c - point_a;
+			vec3 h = cross(ray.direction, edge2);
+			float a = dot(edge1, h);
+
+			if (a > -EPSILON && a < EPSILON)
+			{
+				hit.uv = {0, 0}; // Degenerate UV coordinates
+			}
+			else
+			{
+				float f = 1.0 / a;
+				vec3 s = ray.origin - v0;
+				float u = f * dot(s, h);
+				hit.uv.s = u;
+
+				vec3 q = cross(s, edge1);
+				float v = f * dot(ray.direction, q);
+				hit.uv.t = v;
+			}
 
 			return hit;
 		}
 
-		return Hit(); // No intersection
+		hit.hit = false;
+		return hit;
 	}
 };
 
@@ -286,8 +300,9 @@ private:
 	string fname;
 
 public:
-	Mesh(string fname)
+	Mesh(string fname, Material material)
 	{
+		this->material = material;
 		this->fname = fname;
 		this->load_mesh();
 	}
@@ -315,7 +330,7 @@ public:
 				float i, j, k;
 				stream >> i >> j >> k;
 
-				Triangle t = Triangle(positions[i], positions[j], positions[k]);
+				Triangle t = Triangle(positions[i - 1], positions[j - 1], positions[k - 1], this->material);
 				this->triangles.push_back(t);
 			}
 		}
@@ -330,7 +345,7 @@ public:
 			Hit h = t.intersect(ray);
 			if (h.hit)
 			{
-				cout << "HERE 1" << endl;
+				cout << "HIT MESH" << endl;
 				return h;
 			}
 		}
@@ -394,6 +409,7 @@ vec3 PhongModel(vec3 point, vec3 normal, vec2 uv, vec3 view_direction, Material 
 		 * according to the texture coordinates stored in the uv variable.
 		 * Make sure that the code works also for objects that should not have texture.
 		 */
+
 		I_diffuse += material.diffuse * cos_phi * l->color * attenuation * (material.texture ? material.texture(uv) : vec3(1.0f));
 
 		// SPECULAR HIGHLIGHT:
@@ -465,39 +481,58 @@ void sceneDefinition()
 	};
 
 	// TEST
-	objects.push_back(new Mesh("./meshes/armadillo.obj"));
+	// objects.push_back(new Mesh("./meshes/armadillo.obj", blue_shiny));
+	objects.push_back(new Mesh("./meshes/bunny.obj", red_specular));
+	// objects.push_back(new Mesh("./meshes/lucy.obj", green_diffuse));
+	// objects.push_back(new Triangle(
+	// 	{-1.0f, -2.5f, 6.0f},
+	// 	{1.0f, -2.0f, 8.0f},
+	// 	{3.0f, -2.0f, 6.0f},
+	// 	blue_shiny));
+
+	// objects.push_back(new Triangle(
+	// 	{-1.0f, 2.5f, 6.0f},
+	// 	{1.0f, 2.0f, 8.0f},
+	// 	{3.0f, 2.0f, 6.0f},
+	// 	red_specular));
+
+	// objects.push_back(new Triangle(
+	// 	{-1.0f, 5.0f, 6.0f},
+	// 	{-10.0f, 25.0f, 10.0f},
+	// 	{-3.0f, 1.0f, 6.0f},
+	// 	green_diffuse));
 
 	// spheres
-	objects.push_back(new Sphere(0.5f, {-1.0f, -2.5f, 6.0f}, red_specular));
-	objects.push_back(new Sphere(1.0f, {1.0f, -2.0f, 8.0f}, blue_shiny));
-	objects.push_back(new Sphere(1.0f, {3.0f, -2.0f, 6.0f}, green_diffuse));
-	objects.push_back(new Sphere(6.0f, {-5.0f, 3.5f, 20.0f}, material_rainbow));
+	// objects.push_back(new Sphere(0.5f, {-1.0f, -2.5f, 6.0f}, red_specular));
+	// objects.push_back(new Sphere(1.0f, {1.0f, -2.0f, 8.0f}, blue_shiny));
+	// objects.push_back(new Sphere(1.0f, {3.0f, -2.0f, 6.0f}, green_diffuse));
+	// objects.push_back(new Sphere(6.0f, {-5.0f, 3.5f, 20.0f}, material_rainbow));
 
 	// planes
-	objects.push_back(new Plane({0.0f, 0.0f, -0.01f},
-								{0.0f, 0.0f, 1.0f},
-								Material())); // back
-	objects.push_back(new Plane({15.0f, 0.0f, 0.0f},
-								{-1.0f, 0.0f, 0.0f},
-								{
-									.diffuse = {0.6f, 0.6f, 1.0f},
-								})); // right
-	objects.push_back(new Plane({0.0f, 0.0f, 30.0f},
-								{0.0f, 0.0f, -1.0f},
-								{
-									.diffuse = {0.5f, 1.0f, 0.5f},
-								})); // front
-	objects.push_back(new Plane({-15.0f, 0.0f, 0.0f},
-								{1.0f, 0.0f, 0.0f},
-								{
-									.diffuse = {0.6f, 0.4f, 0.4f},
-								})); // left
-	objects.push_back(new Plane({0.0f, 27.0f, 0.0f},
-								{0.0f, -1.0f, 0.0f},
-								Material())); // top
-	objects.push_back(new Plane({0.0f, -3.0f, 0.0f},
-								{0.0f, 1.0f, 0.0f},
-								Material())); // bottom
+	// objects.push_back(new Plane({0.0f, 0.0f, -0.01f},
+	// 							{0.0f, 0.0f, 1.0f},
+	// 							Material())); // back
+	// objects.push_back(new Plane({15.0f, 0.0f, 0.0f},
+	// 							{-1.0f, 0.0f, 0.0f},
+	// 							{
+	// 								.diffuse = {0.6f, 0.6f, 1.0f},
+	// 							})); // right
+	// objects.push_back(new Plane({0.0f, 0.0f, 30.0f},
+	// 							{0.0f, 0.0f, -1.0f},
+	// 							{
+	// 								.diffuse = {0.5f, 1.0f, 0.5f},
+	// 							})); // front
+	// objects.push_back(new Plane({-15.0f, 0.0f, 0.0f},
+	// 							{1.0f, 0.0f, 0.0f},
+	// 							{
+	// 								.diffuse = {0.6f, 0.4f, 0.4f},
+	// 							})); // left
+	// objects.push_back(new Plane({0.0f, 27.0f, 0.0f},
+	// 							{0.0f, -1.0f, 0.0f},
+	// 							Material())); // top
+	// objects.push_back(new Plane({0.0f, -3.0f, 0.0f},
+	// 							{0.0f, 1.0f, 0.0f},
+	// 							Material())); // bottom
 
 	// lights
 	lights.push_back(new Light({0.0f, 26.0f, 5.0f}, vec3(150.0f)));
@@ -537,7 +572,7 @@ int main(int argc, const char *argv[])
 		{
 			float dx = X + i * s + s / 2;
 			float dy = Y - j * s - s / 2;
-			vec3 origin(0);
+			vec3 origin(-1, 0, -10);
 			vec3 direction(dx, dy, 1);
 			direction = normalize(direction);
 			Ray ray(origin, direction);
