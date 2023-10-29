@@ -197,25 +197,25 @@ public:
 		return hit;
 	}
 };
-
 class Triangle : public Object
 {
 private:
-	vec3 point_a;
-	vec3 point_b;
-	vec3 point_c;
+	vec3 point_a, point_b, point_c;
+	vec3 normal_a, normal_b, normal_c;
 	const float EPSILON = 1e-6;
+	bool with_normal = false;
 
 public:
-	Triangle(vec3 point_a,
-			 vec3 point_b,
-			 vec3 point_c,
-			 Material material)
+	Triangle(vec3 pa, vec3 pb, vec3 pc, Material mat) : point_a(pa), point_b(pb), point_c(pc)
 	{
-		this->point_a = point_a;
-		this->point_b = point_b;
-		this->point_c = point_c;
-		this->material = material;
+		this->setMaterial(mat);
+	}
+
+	Triangle(vec3 pa, vec3 pb, vec3 pc, vec3 na, vec3 nb, vec3 nc, Material mat)
+		: point_a(pa), point_b(pb), point_c(pc), normal_a(na), normal_b(nb), normal_c(nc)
+	{
+		this->setMaterial(mat);
+		this->with_normal = true;
 	}
 	Hit intersect(Ray ray)
 	{
@@ -258,7 +258,19 @@ public:
 		{
 			hit.hit = true;
 			hit.intersection = ray.origin + t * ray.direction;
-			hit.normal = normalize(cross(e1, e2));
+			if (this->with_normal)
+			{
+				vec3 edge1 = this->normal_b - this->normal_a;
+				vec3 edge2 = this->normal_c - this->normal_a;
+
+				vec3 triangleNormal = normalize(cross(edge1, edge2));
+
+				hit.normal = triangleNormal;
+			}
+			else
+			{
+				hit.normal = normalize(cross(e1, e2));
+			}
 			hit.distance = distance(ray.origin, hit.intersection);
 			hit.object = this;
 
@@ -311,7 +323,8 @@ public:
 	{
 		ifstream objFile(this->fname);
 		string line;
-		vector<vec3> positions;
+		vector<vec3> v_positions;
+		vector<vec3> vn_positions;
 
 		while (getline(objFile, line))
 		{
@@ -323,15 +336,46 @@ public:
 			{
 				float x, y, z;
 				stream >> x >> y >> z;
-				positions.push_back(glm::vec3(x, y, z));
+				v_positions.push_back(glm::vec3(x, y, z));
+			}
+			if (token == "vn")
+			{
+				float x, y, z;
+				stream >> x >> y >> z;
+				vn_positions.push_back(glm::vec3(x, y, z));
 			}
 			if (token == "f")
 			{
-				float i, j, k;
+				string i, j, k;
 				stream >> i >> j >> k;
 
-				Triangle t = Triangle(positions[i - 1], positions[j - 1], positions[k - 1], this->material);
-				this->triangles.push_back(t);
+				if (i.find("//") != string::npos)
+				{
+					int i_v = stoi(i.substr(0, i.find("//")));
+					int i_vn = stoi(i.substr(i.find("//") + 2, i.size()));
+
+					int j_v = stoi(j.substr(0, j.find("//")));
+					int j_vn = stoi(j.substr(j.find("//") + 2, j.size()));
+
+					int k_v = stoi(k.substr(0, k.find("//")));
+					int k_vn = stoi(k.substr(k.find("//") + 2, k.size()));
+
+					Triangle t = Triangle(
+						v_positions[i_v - 1],
+						v_positions[j_v - 1],
+						v_positions[k_v - 1],
+						vn_positions[i_vn - 1],
+						vn_positions[j_vn - 1],
+						vn_positions[k_vn - 1],
+						this->material);
+					this->triangles.push_back(t);
+				}
+				else
+				{
+
+					Triangle t = Triangle(v_positions[stoi(i) - 1], v_positions[stoi(j) - 1], v_positions[stoi(k) - 1], this->material);
+					this->triangles.push_back(t);
+				}
 			}
 		}
 		objFile.close();
@@ -456,6 +500,7 @@ void sceneDefinition()
 	vec3 color_red{1.5f, 0.3f, 0.3f};
 	vec3 color_blue{0.4f, 0.4f, 1.5f};
 	vec3 color_green{0.5f, 1.5f, 0.5f};
+	vec3 color_white{1.5f, 1.5f, 1.5f};
 
 	Material red_specular{
 		.ambient = {0.01f, 0.03f, 0.03f},
@@ -476,13 +521,23 @@ void sceneDefinition()
 		.diffuse = color_green,
 	};
 
+	Material white_plain{
+		.ambient = {1.0f, 1.0f, 1.0f},
+		.diffuse = color_white,
+		.specular = vec3(1.6f),
+		.shininess = 0.0f,
+	};
+
 	Material material_rainbow{
 		.texture = &rainbowTexture,
 	};
 
 	// TEST
+	objects.push_back(new Mesh("./meshes/bunny_with_normals.obj", blue_shiny));
+	// objects.push_back(new Mesh("./meshes/bunny.obj", red_specular));
+
 	// objects.push_back(new Mesh("./meshes/armadillo.obj", blue_shiny));
-	objects.push_back(new Mesh("./meshes/bunny.obj", red_specular));
+
 	// objects.push_back(new Mesh("./meshes/lucy.obj", green_diffuse));
 	// objects.push_back(new Triangle(
 	// 	{-1.0f, -2.5f, 6.0f},
@@ -503,6 +558,7 @@ void sceneDefinition()
 	// 	green_diffuse));
 
 	// spheres
+	// objects.push_back(new Sphere(0.5f, {-1.0f, -2.5f, 6.0f}, white_plain));
 	// objects.push_back(new Sphere(0.5f, {-1.0f, -2.5f, 6.0f}, red_specular));
 	// objects.push_back(new Sphere(1.0f, {1.0f, -2.0f, 8.0f}, blue_shiny));
 	// objects.push_back(new Sphere(1.0f, {3.0f, -2.0f, 6.0f}, green_diffuse));
@@ -558,8 +614,15 @@ vec3 toneMapping(vec3 intensity)
 int main(int argc, const char *argv[])
 {
 	clock_t t = clock(); // keeping the time of the rendering
+	// Default
+	// int width = 1024;
+	// int height = 768;
+	// Debug
 	int width = 512;
 	int height = 384;
+	// Final
+	// int width = 2048;
+	// int height = 1536;
 	float fov = 90; // field of view
 	sceneDefinition();
 	Image image(width, height); // Create an image where we will store the result
@@ -572,7 +635,8 @@ int main(int argc, const char *argv[])
 		{
 			float dx = X + i * s + s / 2;
 			float dy = Y - j * s - s / 2;
-			vec3 origin(-1, 0, -10);
+			// vec3 origin(0);
+			vec3 origin(0, 1, -4);
 			vec3 direction(dx, dy, 1);
 			direction = normalize(direction);
 			Ray ray(origin, direction);
