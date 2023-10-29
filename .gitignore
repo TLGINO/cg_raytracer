@@ -7,6 +7,7 @@
 # IDE
 .idea
 .vscode
+.vs
 
 # from make file
 *.o
