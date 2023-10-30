@@ -221,86 +221,54 @@ public:
 	{
 		Hit hit;
 
-		vec3 e1 = point_b - point_a;
-		vec3 e2 = point_c - point_a;
-		vec3 h = cross(ray.direction, e2);
-		float a = dot(e1, h);
+		glm::vec3 e1 = point_b - point_a;
+		glm::vec3 e2 = point_c - point_a;
+		glm::vec3 h = cross(ray.direction, e2);
+		float a = glm::dot(e1, h);
 
 		if (a > -EPSILON && a < EPSILON)
-		{
-			// Ray is parallel to the triangle plane
-			hit.hit = false;
 			return hit;
-		}
 
-		float f = 1.0 / a;
+		float f = 1.0f / a;
 		vec3 s = ray.origin - point_a;
 		float u = f * dot(s, h);
 
-		if (u < 0.0 || u > 1.0)
-		{
-			hit.hit = false;
+		if (u < 0.0f || u > 1.0f)
 			return hit;
-		}
 
 		vec3 q = cross(s, e1);
 		float v = f * dot(ray.direction, q);
 
-		if (v < 0.0 || u + v > 1.0)
-		{
-			hit.hit = false;
+		if (v < 0.0f || u + v > 1.0f)
 			return hit;
-		}
 
 		float t = f * dot(e2, q);
-
 		if (t > EPSILON)
 		{
 			hit.hit = true;
 			hit.intersection = ray.origin + t * ray.direction;
 			if (this->with_normal)
 			{
-				vec3 edge1 = this->normal_b - this->normal_a;
-				vec3 edge2 = this->normal_c - this->normal_a;
 
-				vec3 triangleNormal = normalize(cross(edge1, edge2));
+				vec3 cross_product = cross({point_b - point_a}, (point_c - point_a));
+				float W = 0.5 * length(cross_product);
 
-				hit.normal = triangleNormal;
+				vec3 center = (point_a + point_b + point_c) / vec3(3.0);
+				float lambda_1 = (0.5 * (length(cross({point_b - center}, (point_c - center))))) / W;
+				float lambda_2 = (0.5 * (length(cross({point_c - center}, (point_a - center))))) / W;
+				float lambda_3 = (0.5 * (length(cross({point_a - center}, (point_b - center))))) / W;
+
+				hit.normal = normalize((1.0f - lambda_1 - lambda_2) * normal_a +
+									   lambda_1 * normal_b + lambda_2 * normal_c);
 			}
 			else
 			{
-				hit.normal = normalize(cross(e1, e2));
+				hit.normal = normalize(cross(point_b - point_a, point_c - point_a));
 			}
 			hit.distance = distance(ray.origin, hit.intersection);
 			hit.object = this;
-
-			// Compute texture coordinates (uv)
-			vec3 v0 = point_a;
-			vec3 edge1 = point_b - point_a;
-			vec3 edge2 = point_c - point_a;
-			vec3 h = cross(ray.direction, edge2);
-			float a = dot(edge1, h);
-
-			if (a > -EPSILON && a < EPSILON)
-			{
-				hit.uv = {0, 0}; // Degenerate UV coordinates
-			}
-			else
-			{
-				float f = 1.0 / a;
-				vec3 s = ray.origin - v0;
-				float u = f * dot(s, h);
-				hit.uv.s = u;
-
-				vec3 q = cross(s, edge1);
-				float v = f * dot(ray.direction, q);
-				hit.uv.t = v;
-			}
-
 			return hit;
 		}
-
-		hit.hit = false;
 		return hit;
 	}
 };
@@ -534,7 +502,7 @@ void sceneDefinition()
 
 	// TEST
 	objects.push_back(new Mesh("./meshes/bunny_with_normals.obj", blue_shiny));
-	// objects.push_back(new Mesh("./meshes/bunny.obj", red_specular));
+	// objects.push_back(new Mesh("./meshes/bunny.obj", blue_shiny));
 
 	// objects.push_back(new Mesh("./meshes/armadillo.obj", blue_shiny));
 
