@@ -8,10 +8,10 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
-
-#include "Material.h"
 #include "glm/glm.hpp"
+
 #include "Image.h"
+#include "Material.h"
 
 // #define PI atan(1) * 4
 
@@ -25,7 +25,7 @@ using glm::vec3;
  * Class representing a single ray.
  */
 class Ray {
- public:
+public:
   vec3 origin;
   vec3 direction;
 
@@ -45,14 +45,14 @@ class Object;
  * Structure representing the event of hitting an object
  */
 struct Hit {
-  bool hit = false;  // state if intersection with an object
-  vec3 normal;  // Normal vector of the intersected object at the intersection
-                // point
-  vec3 intersection;          // Point of Intersection
-  float distance = INFINITY;  // Distance from the origin of the ray to the
-                              // intersection point
-  Object* object = 0;         // pointer to the intersected object
-  vec2 uv;  // Coordinates for computing the texture (texture coordinates)
+  bool hit = false; // state if intersection with an object
+  vec3 normal; // Normal vector of the intersected object at the intersection
+               // point
+  vec3 intersection;         // Point of Intersection
+  float distance = INFINITY; // Distance from the origin of the ray to the
+                             // intersection point
+  Object *object = 0;        // pointer to the intersected object
+  vec2 uv; // Coordinates for computing the texture (texture coordinates)
 };
 // #endregion
 
@@ -61,9 +61,9 @@ struct Hit {
  * General class for the object
  */
 class Object {
- public:
+public:
   vec3 color = vec3(0.0f);
-  Material material;  // Structure describing the material of the object
+  Material material; // Structure describing the material of the object
 
   /** A function computing an intersection, which returns the structure Hit */
   virtual Hit intersect(Ray ray) = 0;
@@ -84,11 +84,11 @@ class Object {
  * Implementation of the class Object for sphere shape.
  */
 class Sphere : public Object {
- private:
+private:
   float radius;
   vec3 center;
 
- public:
+public:
   /**
    * Constructor of the sphere
    * @param radius Radius of the sphere
@@ -128,7 +128,8 @@ class Sphere : public Object {
     float t2 = cdotd + sqrt(radius * radius - D * D);
 
     float t = t1;
-    if (t < 0) t = t2;
+    if (t < 0)
+      t = t2;
 
     if (t < 0) {
       hit.hit = false;
@@ -150,11 +151,11 @@ class Sphere : public Object {
 
 // #region PLANE & TRIANGLE
 class Plane : public Object {
- private:
+private:
   vec3 point = vec3(0);
   vec3 normal = vec3(0, 0, 1);
 
- public:
+public:
   Plane(vec3 point, vec3 normal) : point(point), normal(normal) {}
   Plane(vec3 point, vec3 normal, Material material)
       : point(point), normal(normal) {
@@ -169,12 +170,14 @@ class Plane : public Object {
     float d_dot_N = dot(ray.direction, normal);
 
     // cos b of angle parallel to plane
-    if (d_dot_N == 0) return Hit();
+    if (d_dot_N == 0)
+      return Hit();
 
     float t = ray_dot_n / d_dot_N;
 
     // intersection behind ray origin
-    if (t < 0) return Hit();
+    if (t < 0)
+      return Hit();
 
     Hit hit{
         .hit = true,
@@ -187,91 +190,86 @@ class Plane : public Object {
     return hit;
   }
 };
+
 class Triangle : public Object {
- private:
+private:
   vec3 point_a, point_b, point_c;
-  vec3 normal_a = vec3(0), normal_b= vec3(0), normal_c= vec3(0);
-  float const EPSILON = 1e-6;
+  vec3 normal_a = vec3(0), normal_b = vec3(0), normal_c = vec3(0);
   bool with_normal = false;
 
- public:
+public:
   Triangle(vec3 pa, vec3 pb, vec3 pc, Material mat)
       : point_a(pa), point_b(pb), point_c(pc) {
     this->setMaterial(mat);
   }
 
   Triangle(vec3 pa, vec3 pb, vec3 pc, vec3 na, vec3 nb, vec3 nc, Material mat)
-      : point_a(pa),
-        point_b(pb),
-        point_c(pc),
-        normal_a(na),
-        normal_b(nb),
+      : point_a(pa), point_b(pb), point_c(pc), normal_a(na), normal_b(nb),
         normal_c(nc) {
     this->setMaterial(mat);
-    this->with_normal = true;
+    with_normal = true;
   }
-  Hit intersect(Ray ray) {
-    Hit hit;
 
-    glm::vec3 e1 = point_b - point_a;
-    glm::vec3 e2 = point_c - point_a;
-    glm::vec3 h = cross(ray.direction, e2);
-    float a = glm::dot(e1, h);
+  Hit intersect(Ray ray) override {
+    vec3 p1 = point_a, p2 = point_b, p3 = point_c;
+    vec3 edge1 = p2 - p1;
+    vec3 edge2 = p3 - p1;
+    vec3 perpendicular = cross(edge1, edge2);
+    Hit plane_hit = Plane(p1, normalize(perpendicular)).intersect(ray);
 
-    if (a > -EPSILON && a < EPSILON) return hit;
+    // t check done inside the plane
+    if (!plane_hit.hit)
+      return {};
 
-    float f = 1.0f / a;
-    vec3 s = ray.origin - point_a;
-    float u = f * dot(s, h);
+    // check if p inside triangle
+    vec3 p = plane_hit.intersection;
+    float W = 0.5f * length(perpendicular);
+    auto sign = [](float x) { return 0 <= x ? 1.0f : -1.0f; };
 
-    if (u < 0.0f || u > 1.0f) return hit;
+    vec3 perpendicular1 = cross(p2 - p, p3 - p);
+    float sign1 = sign(dot(perpendicular1, perpendicular));
+    float w1 = 0.5f * length(perpendicular1) * sign1;
 
-    vec3 q = cross(s, e1);
-    float v = f * dot(ray.direction, q);
+    vec3 perpendicular2 = cross(p3 - p, p1 - p);
+    float sign2 = sign(dot(perpendicular2, perpendicular));
+    float w2 = 0.5f * length(perpendicular2) * sign2;
 
-    if (v < 0.0f || u + v > 1.0f) return hit;
+    vec3 perpendicular3 = cross(p1 - p, p2 - p);
+    float sign3 = sign(dot(perpendicular3, perpendicular));
+    float w3 = 0.5f * length(perpendicular3) * sign3;
 
-    float t = f * dot(e2, q);
-    if (t > EPSILON) {
-      hit.hit = true;
-      hit.intersection = ray.origin + t * ray.direction;
-      if (this->with_normal) {
-        vec3 cross_product = cross({point_b - point_a}, (point_c - point_a));
-        float W = 0.5 * length(cross_product);
+    if (1.0f != sign1 || sign1 != sign2 || sign2 != sign3)
+      return {};
 
-        vec3 center = (point_a + point_b + point_c) / vec3(3.0);
-        float lambda_1 =
-            (0.5 * (length(cross({point_b - center}, (point_c - center))))) / W;
-        float lambda_2 =
-            (0.5 * (length(cross({point_c - center}, (point_a - center))))) / W;
-        float lambda_3 =
-            (0.5 * (length(cross({point_a - center}, (point_b - center))))) / W;
+    vec3 normal;
+    if (with_normal)
+      normal = normalize(w1 * normal_a + w2 * normal_b + w3 * normal_c);
+    else
+      normal = normalize(perpendicular);
 
-        hit.normal = normalize((1.0f - lambda_1 - lambda_2) * normal_a +
-                               lambda_1 * normal_b + lambda_2 * normal_c);
-      } else {
-        hit.normal = normalize(cross(point_b - point_a, point_c - point_a));
-      }
-      hit.distance = distance(ray.origin, hit.intersection);
-      hit.object = this;
-      return hit;
-    }
+    Hit hit = {
+        .hit = true,
+        .normal = normal,
+        .intersection = p,
+        .distance = plane_hit.distance,
+        .object = this,
+    };
     return hit;
   }
 };
 
 class Mesh : public Object {
- private:
+public:
   vector<Triangle> triangles;
   string fname;
   string object_name;
   // no smoothing
 
- public:
-   Mesh(string fname_, vec3 translation, Material material) : fname(fname_) {
+public:
+  Mesh(string fname_, vec3 translation, Material material) : fname(fname_) {
     setMaterial(material);
     load_mesh(translation);
-   }
+  }
 
   void load_mesh(vec3 translation) {
     ifstream objFile(this->fname);
@@ -308,20 +306,14 @@ class Mesh : public Object {
           int k_v = stoi(k.substr(0, k.find("//")));
           int k_vn = stoi(k.substr(k.find("//") + 2));
 
-          this->triangles.push_back(
-              Triangle(v_positions[i_v - 1],
-                       v_positions[j_v - 1],
-                       v_positions[k_v - 1],
-                       vn_positions[i_vn - 1],
-                       vn_positions[j_vn - 1],
-                       vn_positions[k_vn - 1],
-                       this->material));
+          this->triangles.push_back(Triangle(
+              v_positions[i_v - 1], v_positions[j_v - 1], v_positions[k_v - 1],
+              vn_positions[i_vn - 1], vn_positions[j_vn - 1],
+              vn_positions[k_vn - 1], this->material));
         } else {
           this->triangles.push_back(
-              Triangle(v_positions[stoi(i) - 1],
-                       v_positions[stoi(j) - 1],
-                       v_positions[stoi(k) - 1],
-                       this->material));
+              Triangle(v_positions[stoi(i) - 1], v_positions[stoi(j) - 1],
+                       v_positions[stoi(k) - 1], this->material));
         }
       } else if (token == "o") {
         stream >> this->object_name;
@@ -338,6 +330,7 @@ class Mesh : public Object {
       if (h.hit && h.distance < closest_hit.distance)
         closest_hit = h;
     }
+    closest_hit.object = this;
     return closest_hit;
   }
 };
@@ -347,7 +340,7 @@ class Mesh : public Object {
  * Light class
  */
 class Light {
- public:
+public:
   vec3 position;
   vec3 color;
 
@@ -358,9 +351,9 @@ class Light {
 // #endregion
 
 // GLOBAL VARIABLES
-vector<Light*> lights;  // list of lights in the scene
+vector<Light *> lights; // list of lights in the scene
 vec3 ambient_light(0.5f);
-vector<Object*> objects;  // list of all objects in the scene
+vector<Object *> objects; // list of all objects in the scene
 
 // #region PHONG-MODEL
 /**
@@ -380,7 +373,7 @@ vec3 PhongModel(vec3 point, vec3 normal, vec2 uv, vec3 view_direction,
        // ambient illumination
       I_ambient = material.ambient * ambient_light;
 
-  for (Light*& l : lights) {
+  for (Light *&l : lights) {
     /* Ex3: Modify the code by adding attenuation of the light due to distance
      * from the intersection point to the light source
      */
@@ -392,7 +385,7 @@ vec3 PhongModel(vec3 point, vec3 normal, vec2 uv, vec3 view_direction,
     // direction from point to light source
     vec3 l_direction = normalize(l->position - point);
     float cos_phi =
-        glm::clamp(dot(normal, l_direction), 0.0f, 1.0f);  // already normalized
+        glm::clamp(dot(normal, l_direction), 0.0f, 1.0f); // already normalized
 
     /* Ex2: Modify the code by adding texturing,
      * i.e. diffuse color should be computed using one of the texture functions
@@ -426,16 +419,27 @@ vec3 PhongModel(vec3 point, vec3 normal, vec2 uv, vec3 view_direction,
 vec3 trace_ray(Ray ray) {
   Hit closest_hit;
 
-  for (Object*& o : objects) {
+  for (Object *&o : objects) {
     Hit hit = o->intersect(ray);
-    if (hit.hit && hit.distance < closest_hit.distance) closest_hit = hit;
+    if (hit.hit && hit.distance < closest_hit.distance)
+      closest_hit = hit;
   }
 
-  return !closest_hit.hit
-             ? vec3(0.0f)
-             : PhongModel(closest_hit.intersection, closest_hit.normal,
-                          closest_hit.uv, normalize(-ray.direction),
-                          closest_hit.object->getMaterial());
+  if (!closest_hit.hit) {
+    return vec3(0);
+  }
+  Object *obj = closest_hit.object;
+//  cout << "obj " << obj << endl;
+  Mesh *mesh = dynamic_cast<Mesh *>(obj);
+  if (mesh) {
+//  cout << mesh->object_name << " " << mesh << endl;
+//  cout << "Material: " << obj->getMaterial().diffuse.x << " "
+//       << obj->getMaterial().diffuse.y << " " << obj->getMaterial().diffuse.z
+//       << endl;
+
+  }
+  return PhongModel(closest_hit.intersection, closest_hit.normal, closest_hit.uv,
+               normalize(-ray.direction), closest_hit.object->getMaterial());
 }
 // #endregion
 
@@ -480,22 +484,32 @@ void sceneDefinition() {
   };
 
   // TEST
-  objects.push_back(new Mesh("./meshes/bunny_with_normals.obj",
-                             {0, -2, 7},
-                             {.diffuse = {0.25f, 0.25f, 0.5f},}
- ));
   objects.push_back(new Mesh("./meshes/armadillo_with_normals.obj",
-                             {-4, -2, 8},
-                             {.diffuse = {0.25f, 0.25f, 0.5f},}
-  ));
-  objects.push_back(new Mesh("./meshes/lucy_with_normals.obj",
-                             {4, -2, 8},
-                             {.diffuse = {0.25f, 0.25f, 0.5f},}
-  ));
-  //objects.push_back(new Mesh("./meshes/bunny.obj",
+                             {-4, -3, 10},
+                             {
+                                 .ambient = {0.7f, 0.7f, 0.1f},
+                                 .diffuse = {0.3, 0.3, 1.0f},
+                                 .specular = {0.2f, 0.2f, 0.5f},
+                                 .shininess = 40.0f,
+                             }));
+  objects.push_back(new Mesh("./meshes/lucy_with_normals.obj", {4, -3, 10},
+                             {
+                                 .ambient = {0.2f, 0.5f, 0.2f},
+                                 .diffuse = {0.4f, 1.0f, 0.4f},
+                                 .specular = {0.2f, 0.4f, 0.1f},
+                                 .shininess = 30.0f,
+                             }));
+  objects.push_back(new Mesh("./meshes/bunny_with_normals.obj", {0, -3, 8},
+                             {
+                                 .ambient = {0.7f, 0.1f, 0.1f},
+                                 .diffuse = {1.0f, 0.3f, 0.3f},
+                                 .specular = {0.4f, 0.1f, 0.1f},
+                                 .shininess = 50.0f,
+                             }));
+  // objects.push_back(new Mesh("./meshes/bunny.obj",
   //                             {0, -2, 8},
-//                             {.diffuse = {0.25f, 0.25f, 0.5f},}));
-  //objects.push_back(new Mesh("./meshes/"))
+  //                             {.diffuse = {0.25f, 0.25f, 0.5f},}));
+  // objects.push_back(new Mesh("./meshes/"))
 
   // objects.push_back(new Mesh("./meshes/armadillo.obj", blue_shiny));
 
@@ -527,33 +541,33 @@ void sceneDefinition() {
   // material_rainbow));
 
   // planes
-  objects.push_back(new Plane({0.0f, 0.0f, -0.01f}, {0.0f, 0.0f, 1.0f},
-                              Material()));  // back
-  objects.push_back(new Plane({15.0f, 0.0f, 0.0f}, {-1.0f, 0.0f, 0.0f},
-                              {
-                                  .diffuse = {0.6f, 0.6f, 1.0f},
-                              }));  // right
-  objects.push_back(new Plane({0.0f, 0.0f, 30.0f}, {0.0f, 0.0f, -1.0f},
-                              {
-                                  .diffuse = {0.5f, 1.0f, 0.5f},
-                              }));  // front
-  objects.push_back(new Plane({-15.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f},
-                              {
-                                  .diffuse = {0.6f, 0.4f, 0.4f},
-                              }));  // left
-  objects.push_back(new Plane({0.0f, 27.0f, 0.0f}, {0.0f, -1.0f, 0.0f},
-                              Material()));  // top
-  objects.push_back(new Plane({0.0f, -3.0f, 0.0f}, {0.0f, 1.0f, 0.0f},
-                              Material()));  // bottom
+    objects.push_back(new Plane({0.0f, 0.0f, -0.01f}, {0.0f, 0.0f, 1.0f},
+                                Material())); // back
+    objects.push_back(new Plane({15.0f, 0.0f, 0.0f}, {-1.0f, 0.0f, 0.0f},
+                                {
+                                    .diffuse = {0.6f, 0.6f, 1.0f},
+                                })); // right
+    objects.push_back(new Plane({0.0f, 0.0f, 30.0f}, {0.0f, 0.0f, -1.0f},
+                                {
+                                    .diffuse = {0.5f, 1.0f, 0.5f},
+                                })); // front
+    objects.push_back(new Plane({-15.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f},
+                                {
+                                    .diffuse = {0.6f, 0.4f, 0.4f},
+                                })); // left
+    objects.push_back(new Plane({0.0f, 27.0f, 0.0f}, {0.0f, -1.0f, 0.0f},
+                                Material())); // top
+    objects.push_back(new Plane({0.0f, -3.0f, 0.0f}, {0.0f, 1.0f, 0.0f},
+                                Material())); // bottom
 
   // lights
-  lights.push_back(new Light({0.0f, 26.0f, 2.0f}, vec3(150.0f)));
-  lights.push_back(new Light({0.0f, 1.0f, 3.0f}, vec3(25.0f)));
+  lights.push_back(new Light({0.0f, 26.0f, 2.0f}, vec3(100.0f)));
   lights.push_back(new Light({0.0f, 5.0f, 1.0f}, vec3(40.0f)));
+  lights.push_back(new Light({0.0f, 1.0f, 3.0f}, vec3(25.0f)));
 }
-//#endregion
+// #endregion
 
-//#region TONE-MAPPING
+// #region TONE-MAPPING
 /**
  * Performing tone mapping and gamma correction of intensity computed using the
  * raytracer EX3 value of gamma from:
@@ -569,20 +583,20 @@ vec3 toneMapping(vec3 intensity) {
 }
 // #endregion
 
-int main(int argc, char const* argv[]) {
-  clock_t t = clock();  // keeping the time of the rendering
-  // Default
-   int width = 1024;
-   int height = 768;
-  // Debug
-//  int width = 640;
-//  int height = 420;
+int main(int argc, char const *argv[]) {
+  clock_t t = clock(); // keeping the time of the rendering
+                       // Default
+                         int width = 1024;
+                         int height = 768;
+                       // Debug
+//  int width = 320;
+//  int height = 210;
   // Final
-  // int width = 2048;
-  // int height = 1536;
-  float fov = 95;  // field of view
+//   int width = 2048;
+//   int height = 1536;
+  float fov = 90; // field of view
   sceneDefinition();
-  Image image(width, height);  // Create an image where we will store the result
+  Image image(width, height); // Create an image where we will store the result
   float s = 2 * tan(0.5 * fov / 180 * M_PI) / width;
   float X = -s * width / 2;
   float Y = s * height / 2;
@@ -591,10 +605,9 @@ int main(int argc, char const* argv[]) {
     for (int j = 0; j < height; j++) {
       float dx = X + i * s + s / 2;
       float dy = Y - j * s - s / 2;
-      vec3 origin(0, 1, 0);
       vec3 direction(dx, dy, 1);
       direction = normalize(direction);
-      Ray ray(origin, direction);
+      Ray ray(vec3(0), direction);
       image.setPixel(i, j, toneMapping(trace_ray(ray)));
     }
 

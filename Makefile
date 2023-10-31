@@ -26,7 +26,6 @@ $(OBJ_DIR):
 
 run: all
 	./$(OUTPUT_BIN)
-	eog $(RESULT_PPM) &
 
 clean:
 	rm -rf $(OUTPUT_BIN) $(RESULT_PPM) $(OBJ_DIR)
