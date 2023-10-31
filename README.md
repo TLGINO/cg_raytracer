@@ -11,10 +11,9 @@ Weekly assignments.
 - Martin Lettry [lettrm@usi.ch]
 
 
-## Assignment 3
+## Bonus Assignment
 
 ### Exercises
 
 - [x] Exercise 1
 - [x] Exercise 2
-- [x] Exercise 3
