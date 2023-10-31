@@ -12,14 +12,14 @@
 #include "Textures.h"
 
 /**
- * Structure describing a material of an object
+ Structure describing a material of an object
  */
-struct Material {
-    vec3 ambient = vec3(0.0f);   // Ambient color of the object
-    vec3 diffuse = vec3(1.0f);   // Color of the object
-    vec3 specular = vec3(0.0f);  // Specular color of the object
-    float shininess = 0.0f; // Exponent for Phong model
-    vec3 (* texture)(vec2 uv) = nullptr;
+struct Material{
+    glm::vec3 ambient = glm::vec3(0.0);
+    glm::vec3 diffuse = glm::vec3(1.0);
+    glm::vec3 specular = glm::vec3(0.0);
+    float shininess = 0.0;
+    glm::vec3 (* texture)(glm::vec2 uv) = NULL;
 };
 
 #endif /* Material_h */
