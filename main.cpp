@@ -14,6 +14,10 @@
 #include "Material.h"
 
 using namespace std;
+using glm::mat4;
+using glm::vec3;
+using glm::vec4;
+using glm::normalize;
 
 /**
  Class representing a single ray.
@@ -51,9 +55,7 @@ struct Hit
 /**
  General class for the object
  */
-class Object
-{
-
+class Object {
 protected:
   glm::mat4 transformationMatrix;        ///< Matrix representing the transformation from the local to the global coordinate system
   glm::mat4 inverseTransformationMatrix; ///< Matrix representing the transformation from the global to the local coordinate system
@@ -79,23 +81,50 @@ public:
   }
   /** Functions for setting up all the transformation matrices
    @param matrix The matrix representing the transformation of the object in the global coordinates */
-  void setTransformation(glm::mat4 matrix)
-  {
-
+  void setTransformation(mat4 matrix) {
     transformationMatrix = matrix;
     inverseTransformationMatrix = glm::inverse(transformationMatrix);
     normalMatrix = glm::transpose(inverseTransformationMatrix);
+  }
+
+  /**
+   * Transform ray into local coords:
+   * affine M-1 * homogenous coords of ray,
+   * then cast back to vec3 and normalize direction
+   * @param ray ray in global coords
+   * @return ray in local coords
+   */
+  Ray toLocal(const Ray& ray) {
+    return Ray(
+        vec3(inverseTransformationMatrix * vec4(ray.origin, 1)),
+        normalize(vec3(inverseTransformationMatrix * vec4(ray.direction, 0))));
+  }
+
+  /**
+   * Transform hit into global coords:
+   * M * intersection and M^(-t) * normal to give it back in global coords
+   * @param hit hit in local coords
+   * @return hit in global coords
+   */
+  Hit toGlobal(const Hit& h, const vec3& ray_origin) {
+    return {
+        .hit = h.hit,
+        .normal = normalize(vec3(normalMatrix * vec4(h.normal, 0))),
+        .intersection = vec3(transformationMatrix * vec4(h.intersection, 1)),
+        .distance = glm::distance(h.intersection, ray_origin),
+        .object = h.object,
+        .uv = h.uv,
+    };
   }
 };
 
 /**
  Implementation of the class Object for sphere shape.
  */
-class Sphere : public Object
-{
+class Sphere : public Object {
 private:
   float radius = 1;                ///< Radius of the sphere
-  glm::vec3 center = glm::vec3(0); ///< Center of the sphere
+  vec3 center = vec3(0); ///< Center of the sphere
 
 public:
   /**
@@ -103,7 +132,7 @@ public:
    @param color Color of the sphere
    @param material Material of the sphere
    */
-  Sphere(glm::vec3 color)
+  Sphere(vec3 color)
   {
     this->color = color;
   }
@@ -111,85 +140,65 @@ public:
   {
     this->material = material;
   }
-  /** Implementation of the intersection function*/
-  Hit intersect(Ray ray)
-  {
-    glm::vec3 n_direction = this->inverseTransformationMatrix * glm::vec4(ray.direction, 0.0);
-    glm::vec3 n_origin = this->inverseTransformationMatrix * glm::vec4(ray.origin, 1.0);
-    n_direction = normalize(n_direction);
 
-    glm::vec3 c = center - n_origin;
+  /** Implementation of the intersection function*/
+  Hit intersect(Ray ray) {
+    Ray local_ray = toLocal(ray);
+    vec3 c = center - local_ray.origin;
 
     float cdotc = glm::dot(c, c);
-    float cdotd = glm::dot(c, n_direction);
-
-    Hit hit;
-
+    float cdotd = glm::dot(c, local_ray.direction);
     float D = 0;
-    if (cdotc > cdotd * cdotd)
-    {
+    if (cdotc > cdotd * cdotd) {
       D = sqrt(cdotc - cdotd * cdotd);
     }
-    if (D <= radius)
-    {
-      hit.hit = true;
-      float t1 = cdotd - sqrt(radius * radius - D * D);
-      float t2 = cdotd + sqrt(radius * radius - D * D);
 
-      float t = t1;
-      if (t < 0)
-        t = t2;
-      if (t < 0)
-      {
-        hit.hit = false;
-        return hit;
-      }
-
-      hit.intersection = n_origin + t * n_direction;
-      hit.normal = glm::normalize(hit.intersection - center);
-      hit.distance = glm::distance(n_origin, hit.intersection);
-      hit.object = this;
-
-      hit.uv.s = (asin(hit.normal.y) + M_PI / 2) / M_PI;
-      hit.uv.t = (atan2(hit.normal.z, hit.normal.x) + M_PI) / (2 * M_PI);
+    if (D > radius) {
+      return Hit();
     }
-    else
-    {
-      hit.hit = false;
+
+    float t1 = cdotd - sqrt(radius * radius - D * D);
+    float t2 = cdotd + sqrt(radius * radius - D * D);
+    float t = t1;
+    if (t < 0)
+      t = t2;
+
+    if (t < 0) {
+      return Hit();
     }
-    return hit;
+
+    Hit hit;
+    hit.hit = true;
+    hit.intersection = local_ray.origin + t * local_ray.direction;
+    hit.normal = glm::normalize(hit.intersection - center);
+    hit.distance = glm::distance(local_ray.origin, hit.intersection);
+    hit.object = this;
+    hit.uv.s = (asin(hit.normal.y) + M_PI / 2) / M_PI;
+    hit.uv.t = (atan2(hit.normal.z, hit.normal.x) + M_PI) / (2 * M_PI);
+    return toGlobal(hit, local_ray.origin);
   }
 };
 
-class Plane : public Object
-{
-
+class Plane : public Object {
 private:
   glm::vec3 normal;
   glm::vec3 point;
 
 public:
-  Plane(glm::vec3 point, glm::vec3 normal) : point(point), normal(normal)
-  {
-  }
+  Plane(glm::vec3 point, glm::vec3 normal) : point(point), normal(normal) {}
   Plane(glm::vec3 point, glm::vec3 normal, Material material) : point(point), normal(normal)
   {
     this->material = material;
   }
-  Hit intersect(Ray ray)
-  {
-
+  Hit intersect(Ray ray) {
     Hit hit;
     hit.hit = false;
     float DdotN = glm::dot(ray.direction, normal);
-    if (DdotN < 0)
-    {
-
+    if (DdotN < 0) {
       float PdotN = glm::dot(point - ray.origin, normal);
       float t = PdotN / DdotN;
 
-      if (t > 0)
-      {
+      if (t > 0) {
         hit.hit = true;
         hit.normal = normal;
         hit.distance = t;
@@ -361,7 +370,7 @@ glm::vec3 trace_ray(Ray ray)
   for (int k = 0; k < objects.size(); k++)
   {
     Hit hit = objects[k]->intersect(ray);
-    if (hit.hit == true && hit.distance < closest_hit.distance)
+    if (hit.hit && hit.distance < closest_hit.distance)
       closest_hit = hit;
   }
 
@@ -380,37 +389,37 @@ glm::vec3 trace_ray(Ray ray)
 /**
  Function defining the scene
  */
-void sceneDefinition(float up_down_val, float rotation_val)
-{
+void sceneDefinition(float up_down_val, float rotation_val) {
+  Material green_diffuse;//
+  green_diffuse.ambient = glm::vec3(0.03f, 0.1f, 0.03f);//
+  green_diffuse.diffuse = glm::vec3(0.3f, 1.0f, 0.3f);//
 
-  Material green_diffuse;
-  green_diffuse.ambient = glm::vec3(0.03f, 0.1f, 0.03f);
-  green_diffuse.diffuse = glm::vec3(0.3f, 1.0f, 0.3f);
+  Material red_specular;//
+  red_specular.diffuse = glm::vec3(1.0f, 0.2f, 0.2f);//
+  red_specular.ambient = glm::vec3(0.01f, 0.02f, 0.02f);//
+  red_specular.specular = glm::vec3(0.5);//
+  red_specular.shininess = 10.0;//
 
-  Material red_specular;
-  red_specular.diffuse = glm::vec3(1.0f, 0.2f, 0.2f);
-  red_specular.ambient = glm::vec3(0.01f, 0.02f, 0.02f);
-  red_specular.specular = glm::vec3(0.5);
-  red_specular.shininess = 10.0;
-
-  Material blue_specular;
-  blue_specular.ambient = glm::vec3(0.02f, 0.02f, 0.1f);
-  blue_specular.diffuse = glm::vec3(0.2f, 0.2f, 1.0f);
-  blue_specular.specular = glm::vec3(0.6);
-  blue_specular.shininess = 100.0;
+  Material blue_specular;//
+  blue_specular.ambient = glm::vec3(0.02f, 0.02f, 0.1f);//
+  blue_specular.diffuse = glm::vec3(0.2f, 0.2f, 1.0f);//
+  blue_specular.specular = glm::vec3(0.6);//
+  blue_specular.shininess = 100.0;//
 
   Sphere *s1 = new Sphere(blue_specular);
-  s1->setTransformation(
-      translate(glm::vec3(1, -2, 8)));
+  s1->setTransformation(translate(glm::vec3(1, -2, 8)));
   objects.push_back(s1);
 
   Sphere *s2 = new Sphere(red_specular);
   s2->setTransformation(
-      translate(glm::vec3(-1, -1, 6)) *
-      scale(glm::vec3(0.5)));
+          translate(vec3(-0.7, -1, 3.5)) *
+                scale(mat4(1), vec3(0.5))
+                );
+//      scale(
+//          translate(mat4(1.0f), vec3(-0.20, -0.20, 0.6)),
+//          glm::vec3(0.1)));
   objects.push_back(s2);
 
-  // objects.push_back(new Sphere(0.5, glm::vec3(-1, -2.5, 6), red_specular));
 
   // ------ Assignment 5 -------
   // You can remove the green sphere as it should be replaced with a green cone
@@ -421,31 +430,37 @@ void sceneDefinition(float up_down_val, float rotation_val)
   textured.texture = &rainbowTexture;
   Sphere *s3 = new Sphere(textured);
   s3->setTransformation(
+//      translate(vec3(-2, 0, 35)) *
+//            scale(mat4(1), vec3(10))
+//            );
       // translate(glm::vec3(-6, 4, 23)) *
+
+
       translate(glm::vec3(-6, up_down_val, 23)) *
       scale(glm::vec3(7)) *
-
       rotate(glm::radians(rotation_val), glm::vec3(1, 0, 0)));
   // rotate(glm::radians(90.0f), glm::vec3(1, 0, 0)));
+
+
   objects.push_back(s3);
 
   // Planes
-  Material red_diffuse;
-  red_diffuse.ambient = glm::vec3(0.09f, 0.06f, 0.06f);
-  red_diffuse.diffuse = glm::vec3(0.9f, 0.6f, 0.6f);
+  Material red_diffuse;//
+  red_diffuse.ambient = glm::vec3(0.09f, 0.06f, 0.06f);//
+  red_diffuse.diffuse = glm::vec3(0.9f, 0.6f, 0.6f);//
 
-  Material blue_diffuse;
-  blue_diffuse.ambient = glm::vec3(0.06f, 0.06f, 0.09f);
-  blue_diffuse.diffuse = glm::vec3(0.6f, 0.6f, 0.9f);
-  objects.push_back(new Plane(glm::vec3(0, -3, 0), glm::vec3(0.0, 1, 0)));
-  objects.push_back(new Plane(glm::vec3(0, 1, 30), glm::vec3(0.0, 0.0, -1.0), green_diffuse));
-  objects.push_back(new Plane(glm::vec3(-15, 1, 0), glm::vec3(1.0, 0.0, 0.0), red_diffuse));
-  objects.push_back(new Plane(glm::vec3(15, 1, 0), glm::vec3(-1.0, 0.0, 0.0), blue_diffuse));
-  objects.push_back(new Plane(glm::vec3(0, 27, 0), glm::vec3(0.0, -1, 0)));
-  objects.push_back(new Plane(glm::vec3(0, 1, -0.01), glm::vec3(0.0, 0.0, 1.0), green_diffuse));
+  Material blue_diffuse;//
+  blue_diffuse.ambient = glm::vec3(0.06f, 0.06f, 0.09f);//
+  blue_diffuse.diffuse = glm::vec3(0.6f, 0.6f, 0.9f);//
+  objects.push_back(new Plane(glm::vec3(0, -3, 0), glm::vec3(0.0, 1, 0)));//
+  objects.push_back(new Plane(glm::vec3(0, 1, 30), glm::vec3(0.0, 0.0, -1.0), green_diffuse));//
+  objects.push_back(new Plane(glm::vec3(-15, 1, 0), glm::vec3(1.0, 0.0, 0.0), red_diffuse));//
+  objects.push_back(new Plane(glm::vec3(15, 1, 0), glm::vec3(-1.0, 0.0, 0.0), blue_diffuse));//
+  objects.push_back(new Plane(glm::vec3(0, 27, 0), glm::vec3(0.0, -1, 0)));//
+  objects.push_back(new Plane(glm::vec3(0, 1, -0.01), glm::vec3(0.0, 0.0, 1.0), green_diffuse));//
 
   /* ----- Assignment 5 -------
-  Create two conse and add them to the collection of our objects.
+  Create two cons and add them to the collection of our objects.
   Remember to create them with corresponding materials and transformation matrices
   */
   Material yellow_very_specular;
@@ -466,9 +481,9 @@ void sceneDefinition(float up_down_val, float rotation_val)
                            scale(glm::vec3(1.0f, 3.0f, 1.0f)));
   objects.push_back(cone2);
 
-  lights.push_back(new Light(glm::vec3(0, 26, 5), glm::vec3(1.0, 1.0, 1.0)));
-  lights.push_back(new Light(glm::vec3(0, 1, 12), glm::vec3(0.1)));
-  lights.push_back(new Light(glm::vec3(0, 5, 1), glm::vec3(0.4)));
+  lights.push_back(new Light(glm::vec3(0, 26, 5), glm::vec3(1.0, 1.0, 1.0)));//
+  lights.push_back(new Light(glm::vec3(0, 1, 12), glm::vec3(0.1)));//
+  lights.push_back(new Light(glm::vec3(0, 5, 1), glm::vec3(0.4)));//
 }
 
 /**

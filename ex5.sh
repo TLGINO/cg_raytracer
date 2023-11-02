@@ -1,6 +1,6 @@
 #!/bin/bash
 
-g++ main.cpp -o a.out
+g++ main.cpp -Ofast -o a.out
 
 
 
