@@ -1,627 +1,509 @@
 /**
- * @file main.cpp
- */
+@file main.cpp
+*/
 
+#include <iostream>
+#include <fstream>
 #include <cmath>
 #include <ctime>
-#include <fstream>
-#include <iostream>
-#include <sstream>
 #include <vector>
 #include "glm/glm.hpp"
+#include "glm/gtx/transform.hpp"
 
 #include "Image.h"
 #include "Material.h"
 
-// #define PI atan(1) * 4
+using namespace std;
 
-using glm::distance;
-using glm::normalize;
-using glm::reflect;
-using glm::vec3;
-
-// #region RAY
 /**
- * Class representing a single ray.
+ Class representing a single ray.
  */
-class Ray {
+class Ray
+{
 public:
-  vec3 origin;
-  vec3 direction;
-
-  /**
-   * Constructor of the ray
-   * @param origin Origin of the ray
-   * @param direction Direction of the ray
-   */
-  Ray(vec3 origin, vec3 direction) : origin(origin), direction(direction) {}
+  glm::vec3 origin;    ///< Origin of the ray
+  glm::vec3 direction; ///< Direction of the ray
+                       /**
+                        Contructor of the ray
+                        @param origin Origin of the ray
+                        @param direction Direction of the ray
+                        */
+  Ray(glm::vec3 origin, glm::vec3 direction) : origin(origin), direction(direction)
+  {
+  }
 };
-// #endregion
 
-// #region HIT
 class Object;
 
 /**
- * Structure representing the event of hitting an object
+ Structure representing the even of hitting an object
  */
-struct Hit {
-  bool hit = false; // state if intersection with an object
-  vec3 normal; // Normal vector of the intersected object at the intersection
-               // point
-  vec3 intersection;         // Point of Intersection
-  float distance = INFINITY; // Distance from the origin of the ray to the
-                             // intersection point
-  Object *object = 0;        // pointer to the intersected object
-  vec2 uv; // Coordinates for computing the texture (texture coordinates)
+struct Hit
+{
+  bool hit;               ///< Boolean indicating whether there was or there was no intersection with an object
+  glm::vec3 normal;       ///< Normal vector of the intersected object at the intersection point
+  glm::vec3 intersection; ///< Point of Intersection
+  float distance;         ///< Distance from the origin of the ray to the intersection point
+  Object *object;         ///< A pointer to the intersected object
+  glm::vec2 uv;           ///< Coordinates for computing the texture (texture coordinates)
 };
-// #endregion
 
-// #region OBJECT
 /**
- * General class for the object
+ General class for the object
  */
-class Object {
-public:
-  vec3 color = vec3(0.0f);
-  Material material; // Structure describing the material of the object
+class Object
+{
 
-  /** A function computing an intersection, which returns the structure Hit */
+protected:
+  glm::mat4 transformationMatrix;        ///< Matrix representing the transformation from the local to the global coordinate system
+  glm::mat4 inverseTransformationMatrix; ///< Matrix representing the transformation from the global to the local coordinate system
+  glm::mat4 normalMatrix;                ///< Matrix for transforming normal vectors from the local to the global coordinate system
+
+public:
+  glm::vec3 color;   ///< Color of the object
+  Material material; ///< Structure describing the material of the object
+                     /** A function computing an intersection, which returns the structure Hit */
   virtual Hit intersect(Ray ray) = 0;
 
   /** Function that returns the material struct of the object*/
-  Material getMaterial() const { return material; }
-
-  /**
-   * Function that set the material
-   * @param material A structure describing the material of the object
-   */
-  void setMaterial(Material m) { this->material = m; }
-};
-// #endregion
-
-// #region SPHERE
-/**
- * Implementation of the class Object for sphere shape.
- */
-class Sphere : public Object {
-private:
-  float radius;
-  vec3 center;
-
-public:
-  /**
-   * Constructor of the sphere
-   * @param radius Radius of the sphere
-   * @param center Center of the sphere
-   * @param color Color of the sphere
-   */
-  Sphere(float radius, vec3 center, vec3 color)
-      : radius(radius), center(center) {
-    this->color = color;
+  Material getMaterial()
+  {
+    return material;
   }
-
-  Sphere(float radius, vec3 center, Material material)
-      : radius(radius), center(center) {
+  /** Function that set the material
+   @param material A structure describing the material of the object
+  */
+  void setMaterial(Material material)
+  {
     this->material = material;
   }
 
+  void setTransformation(glm::mat4 matrix)
+  {
+    transformationMatrix = matrix;
+    inverseTransformationMatrix = glm::inverse(matrix);
+    normalMatrix = glm::transpose(inverseTransformationMatrix);
+  }
+};
+
+/**
+ Implementation of the class Object for sphere shape.
+ */
+class Sphere : public Object
+{
+private:
+  float radius;     ///< Radius of the sphere
+  glm::vec3 center; ///< Center of the sphere
+
+public:
   /**
-   * Implementation of the intersection function
+   The constructor of the sphere
+   @param radius Radius of the sphere
+   @param center Center of the sphere
+   @param color Color of the sphere
    */
-  Hit intersect(Ray ray) {
-    vec3 c = center - ray.origin;
+  Sphere(float radius, glm::vec3 center, glm::vec3 color) : radius(radius), center(center)
+  {
+    this->color = color;
+  }
+  Sphere(float radius, glm::vec3 center, Material material) : radius(radius), center(center)
+  {
+    this->material = material;
+  }
+  /** Implementation of the intersection function*/
+  Hit intersect(Ray ray)
+  {
+
+    glm::vec3 c = center - ray.origin;
+
     float cdotc = glm::dot(c, c);
     float cdotd = glm::dot(c, ray.direction);
+
     Hit hit;
+
     float D = 0;
-    if (cdotc > cdotd * cdotd) {
+    if (cdotc > cdotd * cdotd)
+    {
       D = sqrt(cdotc - cdotd * cdotd);
     }
+    if (D <= radius)
+    {
+      hit.hit = true;
+      float t1 = cdotd - sqrt(radius * radius - D * D);
+      float t2 = cdotd + sqrt(radius * radius - D * D);
 
-    if (D > radius) {
+      float t = t1;
+      if (t < 0)
+        t = t2;
+      if (t < 0)
+      {
+        hit.hit = false;
+        return hit;
+      }
+
+      hit.intersection = ray.origin + t * ray.direction;
+      hit.normal = glm::normalize(hit.intersection - center);
+      hit.distance = glm::distance(ray.origin, hit.intersection);
+      hit.object = this;
+
+      hit.uv.s = (asin(hit.normal.y) + M_PI / 2) / M_PI;
+      hit.uv.t = (atan2(hit.normal.z, hit.normal.x) + M_PI) / (2 * M_PI);
+    }
+    else
+    {
       hit.hit = false;
+    }
+    return hit;
+  }
+};
+
+class Plane : public Object
+{
+
+private:
+  glm::vec3 normal;
+  glm::vec3 point;
+
+public:
+  Plane(glm::vec3 point, glm::vec3 normal) : point(point), normal(normal)
+  {
+  }
+  Plane(glm::vec3 point, glm::vec3 normal, Material material) : point(point), normal(normal)
+  {
+    this->material = material;
+  }
+  Hit intersect(Ray ray)
+  {
+
+    Hit hit;
+    hit.hit = false;
+    float DdotN = glm::dot(ray.direction, normal);
+    if (DdotN < 0)
+    {
+
+      float PdotN = glm::dot(point - ray.origin, normal);
+      float t = PdotN / DdotN;
+
+      if (t > 0)
+      {
+        hit.hit = true;
+        hit.normal = normal;
+        hit.distance = t;
+        hit.object = this;
+        hit.intersection = t * ray.direction + ray.origin;
+      }
+    }
+    return hit;
+  }
+};
+
+class Cone : public Object
+{
+private:
+  Plane *plane;
+
+public:
+  Cone(Material material)
+  {
+    this->material = material;
+    plane = new Plane(glm::vec3(0, 1, 0), glm::vec3(0.0, 1, 0));
+  }
+  Hit intersect(Ray ray)
+  {
+
+    Hit hit;
+    hit.hit = false;
+
+    glm::vec3 d = inverseTransformationMatrix * glm::vec4(ray.direction, 0.0); // implicit cast to vec3
+    glm::vec3 o = inverseTransformationMatrix * glm::vec4(ray.origin, 1.0);    // implicit cast to vec3
+    d = glm::normalize(d);
+
+    float a = d.x * d.x + d.z * d.z - d.y * d.y;
+    float b = 2 * (d.x * o.x + d.z * o.z - d.y * o.y);
+    float c = o.x * o.x + o.z * o.z - o.y * o.y;
+
+    float delta = b * b - 4 * a * c;
+
+    if (delta < 0)
+    {
       return hit;
+    }
+
+    float t1 = (-b - sqrt(delta)) / (2 * a);
+    float t2 = (-b + sqrt(delta)) / (2 * a);
+
+    float t = t1;
+    hit.intersection = o + t * d;
+    if (t < 0 || hit.intersection.y > 1 || hit.intersection.y < 0)
+    {
+      t = t2;
+      hit.intersection = o + t * d;
+      if (t < 0 || hit.intersection.y > 1 || hit.intersection.y < 0)
+      {
+        return hit;
+      }
+    };
+
+    hit.normal = glm::vec3(hit.intersection.x, -hit.intersection.y, hit.intersection.z);
+    hit.normal = glm::normalize(hit.normal);
+
+    Ray new_ray(o, d);
+    Hit hit_plane = plane->intersect(new_ray);
+    if (hit_plane.hit && hit_plane.distance < t && length(hit_plane.intersection - glm::vec3(0, 1, 0)) <= 1.0)
+    {
+      hit.intersection = hit_plane.intersection;
+      hit.normal = hit_plane.normal;
     }
 
     hit.hit = true;
-    float t1 = cdotd - sqrt(radius * radius - D * D);
-    float t2 = cdotd + sqrt(radius * radius - D * D);
-
-    float t = t1;
-    if (t < 0)
-      t = t2;
-
-    if (t < 0) {
-      hit.hit = false;
-      return hit;
-    }
-
-    hit.intersection = ray.origin + t * ray.direction;
-    hit.normal = normalize(hit.intersection - center);
-    hit.distance = distance(ray.origin, hit.intersection);
     hit.object = this;
+    hit.intersection = transformationMatrix * glm::vec4(hit.intersection, 1.0); // implicit cast to vec3
+    hit.normal = (normalMatrix * glm::vec4(hit.normal, 0.0));                   // implicit cast to vec3
+    hit.normal = glm::normalize(hit.normal);
+    hit.distance = glm::length(hit.intersection - ray.origin);
 
-    // Ex2: computing texture coordinates for the sphere.
-    hit.uv.s = (asin(hit.normal.y) + M_PI / 2) / M_PI;
-    hit.uv.t = (atan2(hit.normal.z, hit.normal.x) + M_PI) / (2 * M_PI);
-    return hit;
-  }
-};
-// #endregion
-
-// #region PLANE & TRIANGLE
-class Plane : public Object {
-private:
-  vec3 point = vec3(0);
-  vec3 normal = vec3(0, 0, 1);
-
-public:
-  Plane(vec3 point, vec3 normal) : point(point), normal(normal) {}
-  Plane(vec3 point, vec3 normal, Material material)
-      : point(point), normal(normal) {
-    this->material = material;
-  }
-
-  /**
-   * Ex1: Plane-ray intersection
-   */
-  Hit intersect(Ray ray) {
-    float ray_dot_n = dot(point - ray.origin, normal);
-    float d_dot_N = dot(ray.direction, normal);
-
-    // cos b of angle parallel to plane
-    if (d_dot_N == 0)
-      return Hit();
-
-    float t = ray_dot_n / d_dot_N;
-
-    // intersection behind ray origin
-    if (t < 0)
-      return Hit();
-
-    Hit hit{
-        .hit = true,
-        .normal = normalize(normal),
-        .intersection = ray.origin + t * ray.direction,
-        .distance = distance(ray.origin, hit.intersection),
-        .object = this,
-        .uv = {0, 0},
-    };
     return hit;
   }
 };
 
-class Triangle : public Object {
-private:
-  vec3 point_a, point_b, point_c;
-  vec3 normal_a = vec3(0), normal_b = vec3(0), normal_c = vec3(0);
-  bool with_normal = false;
-
+/**
+ Light class
+ */
+class Light
+{
 public:
-  Triangle(vec3 pa, vec3 pb, vec3 pc, Material mat)
-      : point_a(pa), point_b(pb), point_c(pc) {
-    this->setMaterial(mat);
+  glm::vec3 position; ///< Position of the light source
+  glm::vec3 color;    ///< Color/intentisty of the light source
+  Light(glm::vec3 position) : position(position)
+  {
+    color = glm::vec3(1.0);
   }
-
-  Triangle(vec3 pa, vec3 pb, vec3 pc, vec3 na, vec3 nb, vec3 nc, Material mat)
-      : point_a(pa), point_b(pb), point_c(pc), normal_a(na), normal_b(nb),
-        normal_c(nc) {
-    this->setMaterial(mat);
-    with_normal = true;
-  }
-
-  Hit intersect(Ray ray) override {
-    vec3 p1 = point_a, p2 = point_b, p3 = point_c;
-    vec3 edge1 = p2 - p1;
-    vec3 edge2 = p3 - p1;
-    vec3 perpendicular = cross(edge1, edge2);
-    Hit plane_hit = Plane(p1, normalize(perpendicular)).intersect(ray);
-
-    // t check done inside the plane
-    if (!plane_hit.hit)
-      return {};
-
-    // check if p inside triangle
-    vec3 p = plane_hit.intersection;
-    float W = 0.5f * length(perpendicular);
-    auto sign = [](float x) { return 0 <= x ? 1.0f : -1.0f; };
-
-    vec3 perpendicular1 = cross(p2 - p, p3 - p);
-    float sign1 = sign(dot(perpendicular1, perpendicular));
-    float w1 = 0.5f * length(perpendicular1) * sign1;
-
-    vec3 perpendicular2 = cross(p3 - p, p1 - p);
-    float sign2 = sign(dot(perpendicular2, perpendicular));
-    float w2 = 0.5f * length(perpendicular2) * sign2;
-
-    vec3 perpendicular3 = cross(p1 - p, p2 - p);
-    float sign3 = sign(dot(perpendicular3, perpendicular));
-    float w3 = 0.5f * length(perpendicular3) * sign3;
-
-    if (1.0f != sign1 || sign1 != sign2 || sign2 != sign3)
-      return {};
-
-    vec3 normal;
-    if (with_normal)
-      normal = normalize(w1 * normal_a + w2 * normal_b + w3 * normal_c);
-    else
-      normal = normalize(perpendicular);
-
-    Hit hit = {
-        .hit = true,
-        .normal = normal,
-        .intersection = p,
-        .distance = plane_hit.distance,
-        .object = this,
-    };
-    return hit;
+  Light(glm::vec3 position, glm::vec3 color) : position(position), color(color)
+  {
   }
 };
 
-class Mesh : public Object {
-public:
-  vector<Triangle> triangles;
-  string fname;
-  string object_name;
-  // no smoothing
+vector<Light *> lights; ///< A list of lights in the scene
+glm::vec3 ambient_light(0.001, 0.001, 0.001);
+vector<Object *> objects; ///< A list of all objects in the scene
 
-public:
-  Mesh(string fname_, vec3 translation, Material material) : fname(fname_) {
-    setMaterial(material);
-    load_mesh(translation);
-  }
+/** Function for computing color of an object according to the Phong Model
+ @param point A point belonging to the object for which the color is computer
+ @param normal A normal vector the the point
+ @param uv Texture coordinates
+ @param view_direction A normalized direction from the point to the viewer/camera
+ @param material A material structure representing the material of the object
+*/
+glm::vec3 PhongModel(glm::vec3 point, glm::vec3 normal, glm::vec2 uv, glm::vec3 view_direction, Material material)
+{
 
-  void load_mesh(vec3 translation) {
-    ifstream objFile(this->fname);
-    string line;
-    vector<vec3> v_positions;
-    vector<vec3> vn_positions;
+  glm::vec3 color(0.0);
+  for (int light_num = 0; light_num < lights.size(); light_num++)
+  {
 
-    while (getline(objFile, line)) {
-      istringstream stream(line);
-      string token;
-      stream >> token;
+    glm::vec3 light_direction = glm::normalize(lights[light_num]->position - point);
+    glm::vec3 reflected_direction = glm::reflect(-light_direction, normal);
 
-      if (token == "v") {
-        float x, y, z;
-        stream >> x >> y >> z;
-        v_positions.push_back(vec3(x, y, z) + translation);
-      } else if (token == "vn") {
-        // normals might not be unit vectors
-        float x, y, z;
-        stream >> x >> y >> z;
-        vn_positions.push_back(normalize(vec3(x, y, z)));
-      } else if (token == "f") {
-        string i, j, k;
-        stream >> i >> j >> k;
+    float NdotL = glm::clamp(glm::dot(normal, light_direction), 0.0f, 1.0f);
+    float VdotR = glm::clamp(glm::dot(view_direction, reflected_direction), 0.0f, 1.0f);
 
-        bool has_normals = i.find("//") != string::npos;
-        if (has_normals) {
-          int i_v = stoi(i.substr(0, i.find("//")));
-          int i_vn = stoi(i.substr(i.find("//") + 2));
+    glm::vec3 diffuse_color = material.diffuse;
+    if (material.texture)
+    {
+      diffuse_color = material.texture(uv);
+    }
 
-          int j_v = stoi(j.substr(0, j.find("//")));
-          int j_vn = stoi(j.substr(j.find("//") + 2));
+    glm::vec3 diffuse = diffuse_color * glm::vec3(NdotL);
+    glm::vec3 specular = material.specular * glm::vec3(pow(VdotR, material.shininess));
 
-          int k_v = stoi(k.substr(0, k.find("//")));
-          int k_vn = stoi(k.substr(k.find("//") + 2));
+    // distance to the light
+    float r = glm::distance(point, lights[light_num]->position);
+    r = max(r, 0.1f);
 
-          this->triangles.push_back(Triangle(
-              v_positions[i_v - 1], v_positions[j_v - 1], v_positions[k_v - 1],
-              vn_positions[i_vn - 1], vn_positions[j_vn - 1],
-              vn_positions[k_vn - 1], this->material));
-        } else {
-          this->triangles.push_back(
-              Triangle(v_positions[stoi(i) - 1], v_positions[stoi(j) - 1],
-                       v_positions[stoi(k) - 1], this->material));
-        }
-      } else if (token == "o") {
-        stream >> this->object_name;
+    float shadow = 1.0f;
+
+    Ray light_r = Ray(point + light_direction * 0.0001f, light_direction);
+    for (int i = 0; i < objects.size(); i++)
+    {
+      Hit h = objects[i]->intersect(light_r);
+      if (h.hit && h.distance < r)
+      {
+        shadow = 0.0;
+        break;
       }
-      // add smoothing checks
     }
-    objFile.close();
+
+    color += lights[light_num]->color * shadow * (diffuse + specular) / r / r;
   }
-
-  Hit intersect(Ray ray) override {
-    Hit closest_hit;
-    for (Triangle t : this->triangles) {
-      Hit h = t.intersect(ray);
-      if (h.hit && h.distance < closest_hit.distance)
-        closest_hit = h;
-    }
-    closest_hit.object = this;
-    return closest_hit;
-  }
-};
-
-// #region LIGHT
-/**
- * Light class
- */
-class Light {
-public:
-  vec3 position;
-  vec3 color;
-
-  Light(vec3 position, vec3 color) : position(position), color(color) {}
-
-  explicit Light(vec3 position) { Light(position, vec3(1.0f)); }
-};
-// #endregion
-
-// GLOBAL VARIABLES
-vector<Light *> lights; // list of lights in the scene
-vec3 ambient_light(0.5f);
-vector<Object *> objects; // list of all objects in the scene
-
-// #region PHONG-MODEL
-/**
- * Function for computing color of an object according to the Phong Model
- * @param point A point belonging to the object for which the color is computed
- * @param normal A normal vector the the point
- * @param uv Texture coordinates
- * @param view_direction A normalized direction from the point to the
- * viewer/camera
- * @param material A material structure representing the material of the object
- */
-vec3 PhongModel(vec3 point, vec3 normal, vec2 uv, vec3 view_direction,
-                Material material) {
-  vec3 color(0.0f);
-
-  vec3 I_diffuse = vec3(0), I_specular = vec3(0),
-       // ambient illumination
-      I_ambient = material.ambient * ambient_light;
-
-  for (Light *&l : lights) {
-    /* Ex3: Modify the code by adding attenuation of the light due to distance
-     * from the intersection point to the light source
-     */
-    float r = distance(point, l->position);
-    float attenuation = 1 / pow(max(r, 0.5f), 2);
-
-    // DIFFUSE REFLECTION:
-    // from diffuse reflection point, cos of angle of surface normal n and
-    // direction from point to light source
-    vec3 l_direction = normalize(l->position - point);
-    float cos_phi =
-        glm::clamp(dot(normal, l_direction), 0.0f, 1.0f); // already normalized
-
-    /* Ex2: Modify the code by adding texturing,
-     * i.e. diffuse color should be computed using one of the texture functions
-     * according to the texture coordinates stored in the uv variable.
-     * Make sure that the code works also for objects that should not have
-     * texture.
-     */
-
-    I_diffuse += material.diffuse * cos_phi * l->color * attenuation *
-                 (material.texture ? material.texture(uv) : vec3(1.0f));
-
-    // SPECULAR HIGHLIGHT:
-    vec3 r_direction = reflect(-l_direction, normal);
-    float k = max(material.shininess, 1.0f);
-    float cos_alpha = glm::clamp(dot(view_direction, r_direction), 0.0f, 1.0f);
-    I_specular +=
-        material.specular * pow(cos_alpha, k) * l->color * attenuation;
-  }
-
-  color = I_ambient + I_diffuse + I_specular;
-  return clamp(color, vec3(0), vec3(1));
+  color += ambient_light * material.ambient;
+  return color;
 }
-// #endregion
 
-// #region TRACE-RAY
 /**
- * Function computing a color along the ray
- * @param ray Ray that should be traced through the scene
- * @return Color at the intersection point
+ Functions that computes a color along the ray
+ @param ray Ray that should be traced through the scene
+ @return Color at the intersection point
  */
-vec3 trace_ray(Ray ray) {
+glm::vec3 trace_ray(Ray ray)
+{
+
   Hit closest_hit;
 
-  for (Object *&o : objects) {
-    Hit hit = o->intersect(ray);
-    if (hit.hit && hit.distance < closest_hit.distance)
+  closest_hit.hit = false;
+  closest_hit.distance = INFINITY;
+
+  for (int k = 0; k < objects.size(); k++)
+  {
+    Hit hit = objects[k]->intersect(ray);
+    if (hit.hit == true && hit.distance < closest_hit.distance)
       closest_hit = hit;
   }
 
-  if (!closest_hit.hit) {
-    return vec3(0);
+  glm::vec3 color(0.0);
+
+  if (closest_hit.hit)
+  {
+    color = PhongModel(closest_hit.intersection, closest_hit.normal, closest_hit.uv, glm::normalize(-ray.direction), closest_hit.object->getMaterial());
   }
-  Object *obj = closest_hit.object;
-//  cout << "obj " << obj << endl;
-  Mesh *mesh = dynamic_cast<Mesh *>(obj);
-  if (mesh) {
-//  cout << mesh->object_name << " " << mesh << endl;
-//  cout << "Material: " << obj->getMaterial().diffuse.x << " "
-//       << obj->getMaterial().diffuse.y << " " << obj->getMaterial().diffuse.z
-//       << endl;
-
+  else
+  {
+    color = glm::vec3(0.0, 0.0, 0.0);
   }
-  return PhongModel(closest_hit.intersection, closest_hit.normal, closest_hit.uv,
-               normalize(-ray.direction), closest_hit.object->getMaterial());
+  return color;
 }
-// #endregion
-
-// #region SCENE
 /**
- * Function defining the scene
+ Function defining the scene
  */
-void sceneDefinition() {
-  vec3 color_red{1.5f, 0.3f, 0.3f};
-  vec3 color_blue{0.4f, 0.4f, 1.5f};
-  vec3 color_green{0.5f, 1.5f, 0.5f};
-  vec3 color_white{1.5f, 1.5f, 1.5f};
+void sceneDefinition()
+{
 
-  Material red_specular{
-      .ambient = {0.01f, 0.03f, 0.03f},
-      .diffuse = color_red,
-      .specular = vec3(0.5f),
-      .shininess = 10.0f,
-  };
+  Material green_diffuse;
+  green_diffuse.ambient = glm::vec3(0.03f, 0.1f, 0.03f);
+  green_diffuse.diffuse = glm::vec3(0.3f, 1.0f, 0.3f);
 
-  Material blue_shiny{
-      .ambient = {0.07f, 0.07f, 0.1f},
-      .diffuse = color_blue,
-      .specular = vec3(0.6f),
-      .shininess = 100.0f,
-  };
+  Material red_specular;
+  red_specular.diffuse = glm::vec3(1.0f, 0.2f, 0.2f);
+  red_specular.ambient = glm::vec3(0.01f, 0.02f, 0.02f);
+  red_specular.specular = glm::vec3(0.5);
+  red_specular.shininess = 10.0;
 
-  Material green_diffuse{
-      .ambient = {0.07f, 0.09f, 0.07f},
-      .diffuse = color_green,
-  };
+  Material blue_specular;
+  blue_specular.ambient = glm::vec3(0.02f, 0.02f, 0.1f);
+  blue_specular.diffuse = glm::vec3(0.2f, 0.2f, 1.0f);
+  blue_specular.specular = glm::vec3(0.6);
+  blue_specular.shininess = 100.0;
 
-  Material white_plain{
-      .ambient = {1.0f, 1.0f, 1.0f},
-      .diffuse = color_white,
-      .specular = vec3(1.6f),
-      .shininess = 0.0f,
-  };
+  objects.push_back(new Sphere(1.0, glm::vec3(1, -2, 8), blue_specular));
+  objects.push_back(new Sphere(0.5, glm::vec3(-1, -2.5, 6), red_specular));
+  // objects.push_back(new Sphere(1.0, glm::vec3(3,-2,6), green_diffuse));
 
-  Material material_rainbow{
-      .texture = &rainbowTexture,
-  };
+  // Textured sphere
 
-  // TEST
-  objects.push_back(new Mesh("./meshes/armadillo_with_normals.obj",
-                             {-4, -3, 10},
-                             {
-                                 .ambient = {0.7f, 0.7f, 0.1f},
-                                 .diffuse = {0.3, 0.3, 1.0f},
-                                 .specular = {0.2f, 0.2f, 0.5f},
-                                 .shininess = 40.0f,
-                             }));
-  objects.push_back(new Mesh("./meshes/lucy_with_normals.obj", {4, -3, 10},
-                             {
-                                 .ambient = {0.2f, 0.5f, 0.2f},
-                                 .diffuse = {0.4f, 1.0f, 0.4f},
-                                 .specular = {0.2f, 0.4f, 0.1f},
-                                 .shininess = 30.0f,
-                             }));
-  objects.push_back(new Mesh("./meshes/bunny_with_normals.obj", {0, -3, 8},
-                             {
-                                 .ambient = {0.7f, 0.1f, 0.1f},
-                                 .diffuse = {1.0f, 0.3f, 0.3f},
-                                 .specular = {0.4f, 0.1f, 0.1f},
-                                 .shininess = 50.0f,
-                             }));
-  // objects.push_back(new Mesh("./meshes/bunny.obj",
-  //                             {0, -2, 8},
-  //                             {.diffuse = {0.25f, 0.25f, 0.5f},}));
-  // objects.push_back(new Mesh("./meshes/"))
+  Material textured;
+  textured.texture = &rainbowTexture;
+  objects.push_back(new Sphere(7.0, glm::vec3(-6, 4, 23), textured));
 
-  // objects.push_back(new Mesh("./meshes/armadillo.obj", blue_shiny));
+  // Planes
+  Material red_diffuse;
+  red_diffuse.ambient = glm::vec3(0.09f, 0.06f, 0.06f);
+  red_diffuse.diffuse = glm::vec3(0.9f, 0.6f, 0.6f);
 
-  // objects.push_back(new Mesh("./meshes/lucy.obj", green_diffuse));
-  // objects.push_back(new Triangle(
-  // 	{-1.0f, -2.5f, 6.0f},
-  // 	{1.0f, -2.0f, 8.0f},
-  // 	{3.0f, -2.0f, 6.0f},
-  // 	blue_shiny));
+  Material blue_diffuse;
+  blue_diffuse.ambient = glm::vec3(0.06f, 0.06f, 0.09f);
+  blue_diffuse.diffuse = glm::vec3(0.6f, 0.6f, 0.9f);
+  objects.push_back(new Plane(glm::vec3(0, -3, 0), glm::vec3(0.0, 1, 0)));
+  objects.push_back(new Plane(glm::vec3(0, 1, 30), glm::vec3(0.0, 0.0, -1.0), green_diffuse));
+  objects.push_back(new Plane(glm::vec3(-15, 1, 0), glm::vec3(1.0, 0.0, 0.0), red_diffuse));
+  objects.push_back(new Plane(glm::vec3(15, 1, 0), glm::vec3(-1.0, 0.0, 0.0), blue_diffuse));
+  objects.push_back(new Plane(glm::vec3(0, 27, 0), glm::vec3(0.0, -1, 0)));
+  objects.push_back(new Plane(glm::vec3(0, 1, -0.01), glm::vec3(0.0, 0.0, 1.0), green_diffuse));
 
-  // objects.push_back(new Triangle(
-  // 	{-1.0f, 2.5f, 6.0f},
-  // 	{1.0f, 2.0f, 8.0f},
-  // 	{3.0f, 2.0f, 6.0f},
-  // 	red_specular));
+  // Cone
 
-  // objects.push_back(new Triangle(
-  // 	{-1.0f, 5.0f, 6.0f},
-  // 	{-10.0f, 25.0f, 10.0f},
-  // 	{-3.0f, 1.0f, 6.0f},
-  // 	green_diffuse));
+  Material yellow_specular;
+  yellow_specular.ambient = glm::vec3(0.1f, 0.10f, 0.0f);
+  yellow_specular.diffuse = glm::vec3(0.4f, 0.4f, 0.0f);
+  yellow_specular.specular = glm::vec3(1.0);
+  yellow_specular.shininess = 100.0;
 
-  // spheres
-  // objects.push_back(new Sphere(0.5f, {-1.0f, -2.5f, 6.0f}, white_plain));
-  // objects.push_back(new Sphere(0.5f, {-1.0f, -2.5f, 6.0f}, red_specular));
-  // objects.push_back(new Sphere(1.0f, {1.0f, -2.0f, 8.0f}, blue_shiny));
-  // objects.push_back(new Sphere(1.0f, {3.0f, -2.0f, 6.0f}, green_diffuse));
-  // objects.push_back(new Sphere(6.0f, {-5.0f, 3.5f, 20.0f},
-  // material_rainbow));
+  Cone *cone = new Cone(yellow_specular);
+  glm::mat4 translationMatrix = glm::translate(glm::vec3(5, 9, 14));
+  glm::mat4 scalingMatrix = glm::scale(glm::vec3(3.0f, 12.0f, 3.0f));
+  glm::mat4 rotationMatrix = glm::rotate(glm::radians(180.0f), glm::vec3(1, 0, 0));
+  cone->setTransformation(translationMatrix * scalingMatrix * rotationMatrix);
+  objects.push_back(cone);
 
-  // planes
-    objects.push_back(new Plane({0.0f, 0.0f, -0.01f}, {0.0f, 0.0f, 1.0f},
-                                Material())); // back
-    objects.push_back(new Plane({15.0f, 0.0f, 0.0f}, {-1.0f, 0.0f, 0.0f},
-                                {
-                                    .diffuse = {0.6f, 0.6f, 1.0f},
-                                })); // right
-    objects.push_back(new Plane({0.0f, 0.0f, 30.0f}, {0.0f, 0.0f, -1.0f},
-                                {
-                                    .diffuse = {0.5f, 1.0f, 0.5f},
-                                })); // front
-    objects.push_back(new Plane({-15.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f},
-                                {
-                                    .diffuse = {0.6f, 0.4f, 0.4f},
-                                })); // left
-    objects.push_back(new Plane({0.0f, 27.0f, 0.0f}, {0.0f, -1.0f, 0.0f},
-                                Material())); // top
-    objects.push_back(new Plane({0.0f, -3.0f, 0.0f}, {0.0f, 1.0f, 0.0f},
-                                Material())); // bottom
+  Cone *cone2 = new Cone(green_diffuse);
+  translationMatrix = glm::translate(glm::vec3(6, -3, 7));
+  scalingMatrix = glm::scale(glm::vec3(1.0f, 3.0f, 1.0f));
+  rotationMatrix = glm::rotate(glm::atan(3.0f), glm::vec3(0, 0, 1));
+  cone2->setTransformation(translationMatrix * rotationMatrix * scalingMatrix);
+  objects.push_back(cone2);
 
-  // lights
-  lights.push_back(new Light({0.0f, 26.0f, 2.0f}, vec3(100.0f)));
-  lights.push_back(new Light({0.0f, 5.0f, 1.0f}, vec3(40.0f)));
-  lights.push_back(new Light({0.0f, 1.0f, 3.0f}, vec3(25.0f)));
+  lights.push_back(new Light(glm::vec3(0, 26, 5), glm::vec3(1.0, 1.0, 1.0)));
+  lights.push_back(new Light(glm::vec3(0, 1, 12), glm::vec3(0.1)));
+  lights.push_back(new Light(glm::vec3(0, 5, 1), glm::vec3(0.4)));
 }
-// #endregion
 
-// #region TONE-MAPPING
 /**
- * Performing tone mapping and gamma correction of intensity computed using the
- * raytracer EX3 value of gamma from:
- * https://www.rtings.com/laptop/reviews/dell/precision-5560-2021#test_5194
- * @param intensity Input intensity
- * @return Tone mapped intensity in range [0,1]
+ Function performing tonemapping of the intensities computed using the raytracer
+ @param intensity Input intensity
+ @return Tonemapped intensity in range (0,1)
  */
-vec3 toneMapping(vec3 intensity) {
-  float alpha = 0.8f, beta = 1.2f, gamma = 2.13f;
-  vec3 I_tone_mapped = alpha * pow(intensity, vec3(beta));
-  vec3 I_gamma_corrected = min(pow(I_tone_mapped, vec3(1 / gamma)), 1.0f);
-  return clamp(I_gamma_corrected, vec3(0.0f), vec3(1.0f));
+glm::vec3 toneMapping(glm::vec3 intensity)
+{
+  float gamma = 1.0 / 2.0;
+  float alpha = 12.0f;
+  return glm::clamp(alpha * glm::pow(intensity, glm::vec3(gamma)), glm::vec3(0.0), glm::vec3(1.0));
 }
-// #endregion
 
-int main(int argc, char const *argv[]) {
-  clock_t t = clock(); // keeping the time of the rendering
-                       // Default
-                         int width = 1024;
-                         int height = 768;
-                       // Debug
-//  int width = 320;
-//  int height = 210;
-  // Final
-//   int width = 2048;
-//   int height = 1536;
-  float fov = 90; // field of view
-  sceneDefinition();
+int main(int argc, const char *argv[])
+{
+
+  clock_t t = clock(); // variable for keeping the time of the rendering
+
+  int width = 1024; // width of the image
+  int height = 768; // height of the image
+  float fov = 90;   // field of view
+
+  sceneDefinition(); // Let's define a scene
+
   Image image(width, height); // Create an image where we will store the result
+
   float s = 2 * tan(0.5 * fov / 180 * M_PI) / width;
   float X = -s * width / 2;
   float Y = s * height / 2;
 
   for (int i = 0; i < width; i++)
-    for (int j = 0; j < height; j++) {
+    for (int j = 0; j < height; j++)
+    {
+
       float dx = X + i * s + s / 2;
       float dy = Y - j * s - s / 2;
-      vec3 direction(dx, dy, 1);
-      direction = normalize(direction);
-      Ray ray(vec3(0), direction);
+      float dz = 1;
+
+      glm::vec3 origin(0, 0, 0);
+      glm::vec3 direction(dx, dy, dz);
+      direction = glm::normalize(direction);
+
+      Ray ray(origin, direction);
+
       image.setPixel(i, j, toneMapping(trace_ray(ray)));
     }
 
   t = clock() - t;
-  cout << "It took " << (float)t / CLOCKS_PER_SEC
-       << " seconds to render the image." << endl;
-  cout << "I could render at " << (float)CLOCKS_PER_SEC / (float)t
-       << " frames per second." << endl;
+  cout << "It took " << ((float)t) / CLOCKS_PER_SEC << " seconds to render the image." << endl;
+  cout << "I could render at " << (float)CLOCKS_PER_SEC / ((float)t) << " frames per second." << endl;
 
   // Writing the final results of the rendering
   if (argc == 2)
+  {
     image.writeImage(argv[1]);
+  }
   else
+  {
     image.writeImage("./result.ppm");
+  }
 
   return 0;
 }
