@@ -360,15 +360,25 @@ glm::vec3 trace_ray(Ray ray)
   }
 
   glm::vec3 color(0.0);
+  if (!closest_hit.hit)
+    return color;
 
-  if (closest_hit.hit)
+  if (closest_hit.object->getMaterial().is_reflective)
   {
-    color = PhongModel(closest_hit.intersection, closest_hit.normal, closest_hit.uv, glm::normalize(-ray.direction), closest_hit.object->getMaterial());
+    glm::vec3 dir_ray = glm::reflect(ray.direction, closest_hit.normal);
+    glm::vec3 p = closest_hit.intersection + dir_ray * 0.001f;
+    Ray r = Ray(p, dir_ray);
+
+    // compute intersection with closest object from the intersected ray
+    for (int k = 0; k < objects.size(); k++)
+    {
+      Hit hit = objects[k]->intersect(r);
+      if (hit.hit == true && hit.distance < closest_hit.distance)
+        closest_hit = hit;
+    }
   }
-  else
-  {
-    color = glm::vec3(0.0, 0.0, 0.0);
-  }
+  color = PhongModel(closest_hit.intersection, closest_hit.normal, closest_hit.uv, glm::normalize(-ray.direction), closest_hit.object->getMaterial());
+
   return color;
 }
 /**
@@ -389,9 +399,10 @@ void sceneDefinition()
 
   Material blue_specular;
   blue_specular.ambient = glm::vec3(0.02f, 0.02f, 0.1f);
-  blue_specular.diffuse = glm::vec3(0.2f, 0.2f, 1.0f);
+  // blue_specular.diffuse = glm::vec3(0.2f, 0.2f, 1.0f);
   blue_specular.specular = glm::vec3(0.6);
   blue_specular.shininess = 100.0;
+  blue_specular.is_reflective = true;
 
   objects.push_back(new Sphere(1.0, glm::vec3(1, -2, 8), blue_specular));
   objects.push_back(new Sphere(0.5, glm::vec3(-1, -2.5, 6), red_specular));
