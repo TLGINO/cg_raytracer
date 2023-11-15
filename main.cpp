@@ -300,13 +300,9 @@ vector<Object *> objects; ///< A list of all objects in the scene
  @param view_direction A normalized direction from the point to the viewer/camera
  @param material A material structure representing the material of the object
 */
-glm::vec3 PhongModel(glm::vec3 point, glm::vec3 normal, glm::vec2 uv, glm::vec3 view_direction, Material material)
-{
-
+glm::vec3 PhongModel(glm::vec3 point, glm::vec3 normal, glm::vec2 uv, glm::vec3 view_direction, Material material) {
   glm::vec3 color(0.0);
-  for (int light_num = 0; light_num < lights.size(); light_num++)
-  {
-
+  for (int light_num = 0; light_num < lights.size(); light_num++) {
     glm::vec3 light_direction = glm::normalize(lights[light_num]->position - point);
     glm::vec3 reflected_direction = glm::reflect(-light_direction, normal);
 
@@ -314,8 +310,7 @@ glm::vec3 PhongModel(glm::vec3 point, glm::vec3 normal, glm::vec2 uv, glm::vec3 
     float VdotR = glm::clamp(glm::dot(view_direction, reflected_direction), 0.0f, 1.0f);
 
     glm::vec3 diffuse_color = material.diffuse;
-    if (material.texture)
-    {
+    if (material.texture) {
       diffuse_color = material.texture(uv);
     }
 
@@ -326,7 +321,6 @@ glm::vec3 PhongModel(glm::vec3 point, glm::vec3 normal, glm::vec2 uv, glm::vec3 
     float r = glm::distance(point, lights[light_num]->position);
     r = max(r, 0.1f);
 
-
     float shadow = 1.0f;
     Ray light_r = Ray(point + light_direction * 0.0001f, light_direction);
     for (int i = 0; i < objects.size(); i++) {
@@ -336,11 +330,43 @@ glm::vec3 PhongModel(glm::vec3 point, glm::vec3 normal, glm::vec2 uv, glm::vec3 
         break;
       }
     }
+
     color += lights[light_num]->color * shadow * (diffuse + specular) / r / r;
-//      color += lights[light_num]->color * (diffuse + specular) / r / r;
   }
+
   color += ambient_light * material.ambient;
   return color;
+}
+
+//Hit closest_intersection(Ray ray) {
+//  // hit structure representing the closest intersection
+//  Hit closest_hit;
+//
+//  closest_hit.hit = false;
+//  closest_hit.distance = INFINITY;
+//
+//  // Loop over all objects to find the closest intersection
+//  for (Object *object : objects) {
+//    Hit hit = object->intersect(ray);
+//    if (hit.hit && hit.distance < closest_hit.distance) {
+//      closest_hit = hit;
+//    }
+//  }
+//
+//  return closest_hit;
+//}
+
+Hit get_closest_hit(Ray ray) {
+  Hit closest_hit;
+  closest_hit.hit = false;
+  closest_hit.distance = INFINITY;
+
+  for (int k = 0; k < objects.size(); k++) {
+    Hit h = objects[k]->intersect(ray);
+    if (h.hit && h.distance < closest_hit.distance)
+      closest_hit = h;
+  }
+  return closest_hit;
 }
 
 /**
@@ -348,18 +374,14 @@ glm::vec3 PhongModel(glm::vec3 point, glm::vec3 normal, glm::vec2 uv, glm::vec3 
  @param ray Ray that should be traced through the scene
  @return Color at the intersection point
  */
-glm::vec3 trace_ray(Ray ray)
-{
-
+glm::vec3 trace_ray(Ray ray) {
   Hit closest_hit;
-
   closest_hit.hit = false;
   closest_hit.distance = INFINITY;
 
-  for (int k = 0; k < objects.size(); k++)
-  {
+  for (int k = 0; k < objects.size(); k++) {
     Hit hit = objects[k]->intersect(ray);
-    if (hit.hit == true && hit.distance < closest_hit.distance)
+    if (hit.hit && hit.distance < closest_hit.distance)
       closest_hit = hit;
   }
 
@@ -367,34 +389,71 @@ glm::vec3 trace_ray(Ray ray)
   if (!closest_hit.hit)
     return color;
 
-  if (closest_hit.object->getMaterial().is_reflective)
-  {
+  if (closest_hit.object->getMaterial().is_reflective) {
     glm::vec3 dir_ray = glm::reflect(ray.direction, closest_hit.normal);
     glm::vec3 p = closest_hit.intersection + dir_ray * 0.001f;
     Ray r = Ray(p, dir_ray);
+
+    // compute intersection with the closest object from the intersected ray
     Hit reflect_hit;
     reflect_hit.hit = false;
     reflect_hit.distance = INFINITY;
-
-    // compute intersection with closest object from the intersected ray
-    for (int k = 0; k < objects.size(); k++)
-    {
+    for (int k = 0; k < objects.size(); k++) {
       Hit hit = objects[k]->intersect(r);
-      if (hit.hit == true && hit.distance < reflect_hit.distance)
+      if (hit.hit && hit.distance < reflect_hit.distance)
         reflect_hit = hit;
     }
     closest_hit = reflect_hit;
   }
-  color = PhongModel(closest_hit.intersection, closest_hit.normal, closest_hit.uv, glm::normalize(-ray.direction), closest_hit.object->getMaterial());
 
+  if (closest_hit.object->getMaterial().refraction > 0) {
+    glm::vec3 view_direction = glm::normalize(-ray.direction);
+    glm::vec3 n = closest_hit.normal;
+    bool is_going_inside = glm::dot(n, -view_direction) < 0;
+    //    glm::vec3 i = ray.direction;
+    float delta1 = !is_going_inside
+                       ? 1.0f
+                       : closest_hit.object->getMaterial().refraction_index;
+    float delta2 = is_going_inside ? 1.0f
+                                   : closest_hit.object->getMaterial()
+                                         .refraction_index; // assuming air
+    float beta = delta1 / delta2;
+    vec3 refrac_dir =
+        glm::refract(ray.direction, is_going_inside ? n : -n, beta);
+    Ray refrac_ray = Ray(closest_hit.intersection + 0.001f * refrac_dir,
+                         glm::normalize(refrac_dir));
+    Hit refrac_hit = get_closest_hit(refrac_ray);
+        if (refrac_hit.hit) {
+          cout << "hit refraction" << endl;
+          closest_hit = refrac_hit;
+        }
+  }
+
+//    glm::vec3 a = n * glm::dot(n, i);
+//    glm::vec3 b = i - a;
+//    float alpha = sqrt(1 + (1 - beta*beta) * (glm::dot(b, b) / glm::dot(a, a)) );
+//    glm::vec3 refraction_formula = alpha * a + beta * b;
+//    Ray refraction_ray = Ray(closest_hit.intersection + 0.001f * refraction_formula, glm::normalize(refraction_formula));
+//
+//    // compute intersection with the closest object from the intersected ray
+//    Hit refraction_hit;
+//    refraction_hit.hit = false;
+//    refraction_hit.distance = INFINITY;
+//    for (int k = 0; k < objects.size(); k++) {
+//      Hit hit = objects[k]->intersect(refractionrayray);
+//      if (hit.hit && hit.distance < refraction_hit.distance)
+//        refraction_hit = hit;
+//    }
+//    closest_hit = refraction_hit;
+//  }
+
+  color = PhongModel(closest_hit.intersection, closest_hit.normal, closest_hit.uv, glm::normalize(-ray.direction), closest_hit.object->getMaterial());
   return color;
 }
 /**
  Function defining the scene
  */
-void sceneDefinition()
-{
-
+void sceneDefinition() {
   Material green_diffuse;
   green_diffuse.ambient = glm::vec3(0.03f, 0.1f, 0.03f);
   green_diffuse.diffuse = glm::vec3(0.3f, 1.0f, 0.3f);
@@ -412,9 +471,18 @@ void sceneDefinition()
   blue_specular.shininess = 100.0;
   blue_specular.is_reflective = 1.0f;
 
+  Material refractive;
+//  refractive.ambient = glm::vec3(0.5f);
+//  refractive.diffuse = glm::vec3(0.5f);
+  refractive.specular = glm::vec3(1.0f);
+  refractive.shininess = 10.0f;
+  refractive.is_reflective = 1.5f;
+  refractive.refraction = 1.0f;
+  refractive.refraction_index = 2.0f;
+
   objects.push_back(new Sphere(1.0, glm::vec3(1, -2, 8), blue_specular));
   objects.push_back(new Sphere(0.5, glm::vec3(-1, -2.5, 6), red_specular));
-  // objects.push_back(new Sphere(1.0, glm::vec3(3,-2,6), green_diffuse));
+  objects.push_back(new Sphere(2.0, glm::vec3(-3,-1,8), refractive));
 
   // Textured sphere
 

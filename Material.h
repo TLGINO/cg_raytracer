@@ -22,8 +22,8 @@ struct Material
     float shininess = 0.0f;     // Exponent for Phong model
     vec3 (*texture)(vec2 uv) = nullptr;
     float is_reflective = 0.0f;
-    float refraction_index = false;
-    float refraction = false;
+    float refraction_index = 0.0f;
+    float refraction = 0.0f;
 };
 
 #endif /* Material_h */
