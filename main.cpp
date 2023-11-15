@@ -22,7 +22,7 @@ class Ray
 {
 public:
   glm::vec3 origin;    ///< Origin of the ray
-  glm::vec3 direction; ///< Direction of the ray
+  glm::vec3 direction; ///< Direction of the ray unit vector
                        /**
                         Contructor of the ray
                         @param origin Origin of the ray
@@ -106,18 +106,20 @@ public:
   {
     this->color = color;
   }
+
   Sphere(float radius, glm::vec3 center, Material material) : radius(radius), center(center)
   {
     this->material = material;
   }
+
   /** Implementation of the intersection function*/
   Hit intersect(Ray ray)
   {
 
     glm::vec3 c = center - ray.origin;
 
-    float cdotc = glm::dot(c, c);
-    float cdotd = glm::dot(c, ray.direction);
+    float cdotc = glm::dot(c, c);  // cos(0) * ||c|| * ||c|| = ||c||^2
+    float cdotd = glm::dot(c, ray.direction); //  cos(alpha) * ||c|| * 1
 
     Hit hit;
 
@@ -126,6 +128,7 @@ public:
     {
       D = sqrt(cdotc - cdotd * cdotd);
     }
+
     if (D <= radius)
     {
       hit.hit = true;
@@ -135,6 +138,7 @@ public:
       float t = t1;
       if (t < 0)
         t = t2;
+
       if (t < 0)
       {
         hit.hit = false;
@@ -146,6 +150,7 @@ public:
       hit.distance = glm::distance(ray.origin, hit.intersection);
       hit.object = this;
 
+      // x=s, y=t
       hit.uv.s = (asin(hit.normal.y) + M_PI / 2) / M_PI;
       hit.uv.t = (atan2(hit.normal.z, hit.normal.x) + M_PI) / (2 * M_PI);
     }
@@ -172,20 +177,18 @@ public:
   {
     this->material = material;
   }
-  Hit intersect(Ray ray)
-  {
-
+  Hit intersect(Ray ray) {
     Hit hit;
     hit.hit = false;
     float DdotN = glm::dot(ray.direction, normal);
-    if (DdotN < 0)
-    {
 
+    // always from behind, oriented from camera position to plane, not working
+    // for oriented planes downwards
+    if (DdotN < 0) {
       float PdotN = glm::dot(point - ray.origin, normal);
       float t = PdotN / DdotN;
 
-      if (t > 0)
-      {
+      if (t > 0) {
         hit.hit = true;
         hit.normal = normal;
         hit.distance = t;
@@ -203,8 +206,7 @@ private:
   Plane *plane;
 
 public:
-  Cone(Material material)
-  {
+  Cone(Material material) {
     this->material = material;
     plane = new Plane(glm::vec3(0, 1, 0), glm::vec3(0.0, 1, 0));
   }
@@ -218,6 +220,7 @@ public:
     glm::vec3 o = inverseTransformationMatrix * glm::vec4(ray.origin, 1.0);    // implicit cast to vec3
     d = glm::normalize(d);
 
+    // https://lousodrome.net/blog/light/2017/01/03/intersection-of-a-ray-and-a-cone/
     float a = d.x * d.x + d.z * d.z - d.y * d.y;
     float b = 2 * (d.x * o.x + d.z * o.z - d.y * o.y);
     float c = o.x * o.x + o.z * o.z - o.y * o.y;
@@ -249,6 +252,9 @@ public:
 
     Ray new_ray(o, d);
     Hit hit_plane = plane->intersect(new_ray);
+
+    // 3 cond: if point is inside circle base plane circumference (<= 1.0).
+    // inside length(...) is the distance from intersection point to circle base center
     if (hit_plane.hit && hit_plane.distance < t && length(hit_plane.intersection - glm::vec3(0, 1, 0)) <= 1.0)
     {
       hit.intersection = hit_plane.intersection;
@@ -320,20 +326,18 @@ glm::vec3 PhongModel(glm::vec3 point, glm::vec3 normal, glm::vec2 uv, glm::vec3 
     float r = glm::distance(point, lights[light_num]->position);
     r = max(r, 0.1f);
 
-    float shadow = 1.0f;
 
+    float shadow = 1.0f;
     Ray light_r = Ray(point + light_direction * 0.0001f, light_direction);
-    for (int i = 0; i < objects.size(); i++)
-    {
+    for (int i = 0; i < objects.size(); i++) {
       Hit h = objects[i]->intersect(light_r);
-      if (h.hit && h.distance < r)
-      {
+      if (h.hit && h.distance < r) {
         shadow = 0.0;
         break;
       }
     }
-
     color += lights[light_num]->color * shadow * (diffuse + specular) / r / r;
+//      color += lights[light_num]->color * (diffuse + specular) / r / r;
   }
   color += ambient_light * material.ambient;
   return color;
@@ -368,14 +372,18 @@ glm::vec3 trace_ray(Ray ray)
     glm::vec3 dir_ray = glm::reflect(ray.direction, closest_hit.normal);
     glm::vec3 p = closest_hit.intersection + dir_ray * 0.001f;
     Ray r = Ray(p, dir_ray);
+    Hit reflect_hit;
+    reflect_hit.hit = false;
+    reflect_hit.distance = INFINITY;
 
     // compute intersection with closest object from the intersected ray
     for (int k = 0; k < objects.size(); k++)
     {
       Hit hit = objects[k]->intersect(r);
-      if (hit.hit == true && hit.distance < closest_hit.distance)
-        closest_hit = hit;
+      if (hit.hit == true && hit.distance < reflect_hit.distance)
+        reflect_hit = hit;
     }
+    closest_hit = reflect_hit;
   }
   color = PhongModel(closest_hit.intersection, closest_hit.normal, closest_hit.uv, glm::normalize(-ray.direction), closest_hit.object->getMaterial());
 
@@ -399,10 +407,10 @@ void sceneDefinition()
 
   Material blue_specular;
   blue_specular.ambient = glm::vec3(0.02f, 0.02f, 0.1f);
-  // blue_specular.diffuse = glm::vec3(0.2f, 0.2f, 1.0f);
+   blue_specular.diffuse = glm::vec3(0.0f, 0.0f, 0.0f);
   blue_specular.specular = glm::vec3(0.6);
   blue_specular.shininess = 100.0;
-  blue_specular.is_reflective = true;
+  blue_specular.is_reflective = 1.0f;
 
   objects.push_back(new Sphere(1.0, glm::vec3(1, -2, 8), blue_specular));
   objects.push_back(new Sphere(0.5, glm::vec3(-1, -2.5, 6), red_specular));
