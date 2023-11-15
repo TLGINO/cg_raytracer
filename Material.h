@@ -21,7 +21,7 @@ struct Material
     vec3 specular = vec3(0.0f); // Specular color of the object
     float shininess = 0.0f;     // Exponent for Phong model
     vec3 (*texture)(vec2 uv) = nullptr;
-    float is_reflective = 0.0f;
+    float reflection = 0.0f;
     float refraction_index = 0.0f;
     float refraction = 0.0f;
 };
