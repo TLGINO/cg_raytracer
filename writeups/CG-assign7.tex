@@ -76,13 +76,13 @@ This gives us the following values: \\
 
 So the middle value is: (6,7)
 
-p\_z can hence be calculated the following way:
+$p_z$ can hence be calculated the following way:
 
 \[
     p_z = \frac{1}{(1 - \lambda) \cdot \frac{1}{p_{1z}} + \lambda \cdot \frac{1}{p_{2z}}}
 \]
 
-as (6, 7) is exactly in the middle of the line between p1 and p2, we get:
+as (6, 7) is exactly in the middle of the line between q1 and q2, we get:
 
 \[
     \lambda = \frac{1}{2}
@@ -91,26 +91,52 @@ as (6, 7) is exactly in the middle of the line between p1 and p2, we get:
 Hence:
 
 \[
-    p_z = \frac{1}{(1 - \frac{1}{2}) \cdot \frac{1}{2} + \frac{1}{2} \cdot \frac{1}{10}} = \frac{10}{3} = 3.333
+    p_z = \frac{1}{(1 - \frac{1}{2}) \cdot \frac{1}{2} + \frac{1}{2} \cdot \frac{1}{10}} = \frac{10}{3}
 \]
 
-So z-value associated with the middle pixel (along the horizontal direction) of the line is 3.33 .
+So z-value associated with the middle pixel (along the horizontal direction) of the line is $\frac{10}{3}$.
 
 \[
-    p1 = rgb(1, 0, 0)
+    A_1 = rgb(1, 0, 0)
 \]
 \[
-    p2 = rgb(0, 1, 0)
+    A_2 = rgb(0, 1, 0)
 \]
 
-As the new point lies between p1 and p2, the rgb values of the new point will be:
+The rgb values of the new point will be:
 \begin{align*}
-    rgb & = (                          \\
-        & \quad 1 \cdot 0.5 + 0 * 0.5, \\
-        & \quad 0 * 0.5 + 1 * 0.5,     \\
-        & \quad 0                      \\
-        & )                            \\
-        & = (0.5, 0.5, 0)
+    A & = \frac { (1-\lambda) \frac{A_1}{p^z_1} + \lambda \frac{A_2}{p^z_2}}
+    {\frac{1}{p^{z}}}                                                        \\
+      & = \frac { (1-\frac{1}{2}) \frac{
+            \bigl[\begin{smallmatrix}
+                          1 & 0 & 0
+                      \end{smallmatrix}\bigr]
+        }{2} + \frac{1}{2} \frac{
+            \bigl[\begin{smallmatrix}
+                          0 & 1 & 0
+                      \end{smallmatrix}\bigr]
+        }{10}}
+    {\frac{1}{\frac{10}{3}}}                                                 \\
+      & = \frac { \frac{1}{2}
+        \bigl[\begin{smallmatrix}
+                      \frac{1}{2} & 0 & 0
+                  \end{smallmatrix}\bigr]
+        + \frac{1}{2}
+        \bigl[\begin{smallmatrix}
+                      0 & \frac{1}{10} & 0
+                  \end{smallmatrix}\bigr]
+    }
+    {\frac{3}{10}}                                                           \\
+      & = \begin{bmatrix}
+              \frac{1}{4} & \frac{1}{20} & 0
+          \end{bmatrix}
+    \cdot \frac{10}{3}                                                       \\
+      & = \begin{bmatrix}
+              \frac{10}{12} & \frac{1}{6} & 0 \\
+          \end{bmatrix}                                    \\
+      & = \begin{bmatrix}
+              \frac{5}{6} & \frac{1}{6} & 0 \\
+          \end{bmatrix}
 \end{align*}
 
 \section*{Ex 2 [8 points]}
