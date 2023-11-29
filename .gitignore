@@ -1,3 +1,6 @@
+# 
+meshes/*
+
 # project media
 *.mp4
 *.ppm
