@@ -1,6 +1,7 @@
 /**
  * @file main.cpp
  */
+#define DEBUG 0
 
 #include <cmath>
 #include <ctime>
@@ -447,8 +448,11 @@ vector<Triangle> intersectBVH(BVHNode *node, Ray ray)
   {
     return intersectBVH(node->right, ray);
   }
-  // cout << "EMPTY, is this normal?" << endl;
-  // cout << node->triangles.size() << endl;
+
+#if DEBUG
+  cout << "EMPTY, is this normal?" << endl;
+  cout << node->triangles.size() << endl;
+#endif
   return node->triangles;
 }
 class Mesh : public Object
@@ -475,15 +479,21 @@ public:
   {
     setMaterial(material);
     load_mesh(translation);
+#if DEBUG
     cout << min_x << " " << min_y << " " << min_z << endl;
     cout << max_x << " " << max_y << " " << max_z << endl;
     cout << "is BVH = " << is_bvh << endl;
+#endif
 
     if (this->is_bvh)
     {
+#if DEBUG
       cout << "BUILDING BVH" << endl;
+#endif
       bVHNode = buildBVH(std::move(this->triangles));
+#if DEBUG
       cout << "BUILT BVH" << endl;
+#endif
     }
   }
 
@@ -721,7 +731,7 @@ void sceneDefinition()
   // Objects
   // objects.push_back(new Mesh("./meshes/armadillo_small.obj", true, {-4, -3, 10}, white_plain));
   // objects.push_back(new Mesh("./meshes/lucy_small.obj", true, {4, -3, 10}, white_plain));
-  // objects.push_back(new Mesh("./meshes/bunny_small.obj", true, {0, -3, 8}, white_plain));
+  // objects.push_back(new Mesh("./meshes/bunny.obj", true, {0, -3, 8}, white_plain));
 
   objects.push_back(new Mesh("./meshes/armadillo.obj", true, {-4, -3, 10}, white_plain));
   objects.push_back(new Mesh("./meshes/lucy.obj", true, {4, -3, 10}, white_plain));
@@ -765,11 +775,11 @@ int main(int argc, char const *argv[])
   clock_t t = clock(); // keeping the time of the rendering
                        // Default
   // Final
-  int width = 2048;
-  int height = 1536;
+   int width = 2048;
+   int height = 1536;
   // Debug
-  // int width = 1024 / 4;
-  // int height = 768 / 4;
+//  int width = 1024;
+//  int height = 768;
   float fov = 90; // field of view
   sceneDefinition();
   Image image(width, height); // Create an image where we will store the result
