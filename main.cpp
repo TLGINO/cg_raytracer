@@ -409,15 +409,6 @@ vector<Triangle> intersectBVH(BVHNode *node, Ray ray)
   {
     return node->triangles;
   }
-  // Tree is balanced so we can stop recursion if one side is empty
-  if (node->left == nullptr)
-  {
-    return node->right->triangles;
-  }
-  if (node->right == nullptr)
-  {
-    return node->left->triangles;
-  }
 
   // If right and left, return both
   if (bboxIntersect(ray, node->left->bounds.min.x, node->left->bounds.max.x,
@@ -713,7 +704,7 @@ void sceneDefinition()
   green_diffuse.diffuse = color_green;
 
   Material white_plain;
-  white_plain.ambient = {1.0f, 1.0f, 1.0f};
+  white_plain.ambient = {0.5f, 0.5f, 0.5f};
   white_plain.diffuse = color_white;
   white_plain.specular = vec3(1.6f);
   white_plain.shininess = 0.0f;
