@@ -20,10 +20,10 @@ Additionally, let's define a vector $u = p - p_1$.
 Perform the following tasks:
 
 \subsection*{Task 1 [1 points]}
-Construct two matrices, $R_{90}$, $T \in \mathbb{R}^{3 \times 3}$,
+\textbf{Construct two matrices, $R_{90}$, $T \in \mathbb{R}^{3 \times 3}$,
 such that the first one performs counter-clockwise rotation around
 the center of the coordinates system by angle $90 \degree$, and the second one performs translation
-by vector $t = [1, -2]^\intercal$, in homogeneous coordinates.
+by vector $t = [1, -2]^\intercal$, in homogeneous coordinates.}
 
 \[
     p =
@@ -84,13 +84,13 @@ the affine transformation matrix $T$ is:
 \end{equation*}
 
 \subsection*{Task 2 [1 points]}
-Represent the points $p_1$ and $p$ as well as the vector $u$ using homogeneous coordinates and
-transform them first using the $R(90)$ and then $T$ matrices.
-Convert the obtained points and vector back into Cartesian coordinates and denote them by
-$p_1'$, $p'$, and $u'$.
-Draw all the points and vectors before and after the transformation,
-and verify that $u' = p' - p_1'$.
-What influence did the matrix $T$ have on the $u'$?
+\textbf{Represent the points $p_1$ and $p$ as well as the vector $u$ using homogeneous coordinates and
+    transform them first using the $R(90)$ and then $T$ matrices.
+    Convert the obtained points and vector back into Cartesian coordinates and denote them by
+    $p_1'$, $p'$, and $u'$.
+    Draw all the points and vectors before and after the transformation,
+    and verify that $u' = p' - p_1'$.
+    What influence did the matrix $T$ have on the $u'$?}
 \\\newline
 Using homogeneous coordinates for position points:
 
@@ -565,6 +565,31 @@ In other words, the barycentric coordinates for the centroid $G$ are $\left(1/3,
 
 \cleardoublepage
 \section*{Ex 4}
+
+\textbf{Consider a transformation that projects all the points $p_i \in \mathbb{R}^2$ onto the line $x = 1$.
+    For each point, the projection is performed along the line that passes
+    through the center of the coordinate system and the point.
+    Each point $p_i'$ is a result of applying this transformation to point $p_i$.
+    Construct a matrix $M \in \mathbb{R}^{3 \times 3}$ which realizes this transformation
+    using homogeneous coordinates.
+    More specifically, after converting a point $p_i$ into the homogeneous coordinates,
+    multiplying it with the matrix $M$, and transforming it back to the Cartesian coordinates,
+    you should obtain point $p_i'$.
+    Note that this is not an affine transformation.
+    Comment on how the matrix $M$ transforms the points lying on the y-axis.
+    Interpret the results both in the homogeneous and Cartesian coordinates.} \\\newline
+Projection of points onto line $x = 1$ is a line passing always through the origin $O = (0, 0)$
+of the Cartesian coordinate. \\
+Such line from point to origin can be represented as $l : y = ax + b$ where $a$ is the slope of the line and
+$b = 0$ is the y-intercept which passes through the origin $O$. \\
+\[
+    a = \frac{y_2 - y_1}{x_2 - x_1} = \frac{p_y - O_y}{p_x - O_x} = \frac{p_y}{p_x}
+\]
+Hence, line $l : y = \frac{p_y}{p_x} x$ is the line passing through the origin $O$ and any point $p$. \\
+Since points need to be projected on $x = 1$, $l : y = \frac{p_y}{p_x}$. \\
+Thus, $p' = (1, \frac{p_y}{p_x})$ is the projection of point $p$ on line $x = 1$. \\
+
+
 We can see that, when dealing with a given homogeneous coordinate $v = \begin{bmatrix} a \\ b \\ c \end{bmatrix}$, the corresponding Cartesian coordinate $f$ can be determined by dividing each component by the value of the third dimension and omitting that dimension. This operation yields $f = \begin{bmatrix} a/c \\ b/c \end{bmatrix}$.
 
 We can see that for any point $p$, its transformed version can be represented as $p'' = \begin{bmatrix} 1 \\ y/x \end{bmatrix}$. This point transformation can be shown using the following matrix multiplication:
