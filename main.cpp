@@ -3,15 +3,15 @@
  */
 #define DEBUG 0
 
+#include "glm/glm.hpp"
+#include <algorithm>
 #include <cmath>
 #include <ctime>
 #include <fstream>
 #include <iostream>
 #include <sstream>
-#include <vector>
 #include <stack>
-#include <algorithm>
-#include "glm/glm.hpp"
+#include <vector>
 
 #include "Image.h"
 #include "Material.h"
@@ -29,8 +29,7 @@ using glm::vec3;
 /**
  * Class representing a single ray.
  */
-class Ray
-{
+class Ray {
 public:
   vec3 origin;
   vec3 direction;
@@ -50,16 +49,15 @@ class Object;
 /**
  * Structure representing the event of hitting an object
  */
-struct Hit
-{
-  bool hit = false;          // state if intersection with an object
-  vec3 normal;               // Normal vector of the intersected object at the intersection
-                             // point
+struct Hit {
+  bool hit = false; // state if intersection with an object
+  vec3 normal; // Normal vector of the intersected object at the intersection
+               // point
   vec3 intersection;         // Point of Intersection
   float distance = INFINITY; // Distance from the origin of the ray to the
                              // intersection point
   Object *object = 0;        // pointer to the intersected object
-  vec2 uv;                   // Coordinates for computing the texture (texture coordinates)
+  vec2 uv; // Coordinates for computing the texture (texture coordinates)
 };
 // #endregion
 
@@ -67,14 +65,13 @@ struct Hit
 /**
  * General class for the object
  */
-class Object
-{
+class Object {
 public:
   vec3 color = vec3(0.0f);
   Material material; // Structure describing the material of the object
 
   /** A function computing an intersection, which returns the structure Hit */
-  virtual Hit intersect(Ray ray) = 0;
+  virtual Hit intersect(Ray &ray) = 0;
 
   /** Function that returns the material struct of the object*/
   Material getMaterial() const { return material; }
@@ -91,8 +88,7 @@ public:
 /**
  * Implementation of the class Object for sphere shape.
  */
-class Sphere : public Object
-{
+class Sphere : public Object {
 private:
   float radius;
   vec3 center;
@@ -105,34 +101,29 @@ public:
    * @param color Color of the sphere
    */
   Sphere(float radius, vec3 center, vec3 color)
-      : radius(radius), center(center)
-  {
+      : radius(radius), center(center) {
     this->color = color;
   }
 
   Sphere(float radius, vec3 center, Material material)
-      : radius(radius), center(center)
-  {
+      : radius(radius), center(center) {
     this->material = material;
   }
 
   /**
    * Implementation of the intersection function
    */
-  Hit intersect(Ray ray)
-  {
+  Hit intersect(Ray &ray) override {
     vec3 c = center - ray.origin;
     float cdotc = glm::dot(c, c);
     float cdotd = glm::dot(c, ray.direction);
     Hit hit;
     float D = 0;
-    if (cdotc > cdotd * cdotd)
-    {
+    if (cdotc > cdotd * cdotd) {
       D = sqrt(cdotc - cdotd * cdotd);
     }
 
-    if (D > radius)
-    {
+    if (D > radius) {
       hit.hit = false;
       return hit;
     }
@@ -145,8 +136,7 @@ public:
     if (t < 0)
       t = t2;
 
-    if (t < 0)
-    {
+    if (t < 0) {
       hit.hit = false;
       return hit;
     }
@@ -165,8 +155,7 @@ public:
 // #endregion
 
 // #region PLANE & TRIANGLE
-class Plane : public Object
-{
+class Plane : public Object {
 private:
   vec3 point = vec3(0);
   vec3 normal = vec3(0, 0, 1);
@@ -174,28 +163,26 @@ private:
 public:
   Plane(vec3 point, vec3 normal) : point(point), normal(normal) {}
   Plane(vec3 point, vec3 normal, Material material)
-      : point(point), normal(normal)
-  {
+      : point(point), normal(normal) {
     this->material = material;
   }
 
   /**
    * Ex1: Plane-ray intersection
    */
-  Hit intersect(Ray ray)
-  {
+  Hit intersect(Ray &ray) override {
     float ray_dot_n = dot(point - ray.origin, normal);
     float d_dot_N = dot(ray.direction, normal);
 
     // cos b of angle parallel to plane
     if (d_dot_N == 0)
-      return Hit();
+      return {};
 
     float t = ray_dot_n / d_dot_N;
 
     // intersection behind ray origin
     if (t < 0)
-      return Hit();
+      return {};
 
     Hit hit;
     hit.hit = true;
@@ -209,29 +196,25 @@ public:
   }
 };
 
-class Triangle : public Object
-{
+class Triangle : public Object {
 
 public:
   vec3 point_a, point_b, point_c;
   vec3 normal_a = vec3(0), normal_b = vec3(0), normal_c = vec3(0);
   bool with_normal = false;
   Triangle(vec3 pa, vec3 pb, vec3 pc, Material mat)
-      : point_a(pa), point_b(pb), point_c(pc)
-  {
+      : point_a(pa), point_b(pb), point_c(pc) {
     this->setMaterial(mat);
   }
 
   Triangle(vec3 pa, vec3 pb, vec3 pc, vec3 na, vec3 nb, vec3 nc, Material mat)
       : point_a(pa), point_b(pb), point_c(pc), normal_a(na), normal_b(nb),
-        normal_c(nc)
-  {
+        normal_c(nc) {
     this->setMaterial(mat);
     with_normal = true;
   }
 
-  Hit intersect(Ray ray) override
-  {
+  Hit intersect(Ray &ray) override {
     vec3 p1 = point_a, p2 = point_b, p3 = point_c;
     vec3 edge1 = p2 - p1;
     vec3 edge2 = p3 - p1;
@@ -245,8 +228,7 @@ public:
     // check if p inside triangle
     vec3 p = plane_hit.intersection;
     float W = 0.5f * length(perpendicular);
-    auto sign = [](float x)
-    { return 0 <= x ? 1.0f : -1.0f; };
+    auto sign = [](float x) { return 0 <= x ? 1.0f : -1.0f; };
 
     vec3 perpendicular1 = cross(p2 - p, p3 - p);
     float sign1 = sign(dot(perpendicular1, perpendicular));
@@ -279,9 +261,9 @@ public:
     return hit;
   }
 };
-bool bboxIntersect(Ray ray, float mi_x, float ma_x, float mi_y, float ma_y,
-                   float mi_z, float ma_z)
-{
+
+bool bboxIntersect(Ray &ray, float mi_x, float ma_x, float mi_y, float ma_y,
+                   float mi_z, float ma_z) {
   float tmin = (mi_x - ray.origin.x) / ray.direction.x;
   float tmax = (ma_x - ray.origin.x) / ray.direction.x;
 
@@ -315,61 +297,66 @@ bool bboxIntersect(Ray ray, float mi_x, float ma_x, float mi_y, float ma_y,
   return true;
 }
 
-struct AABB
-{
+struct AABB {
   glm::vec3 min;
   glm::vec3 max;
 };
 
-struct BVHNode
-{
+struct BVHNode {
   AABB bounds;
   vector<Triangle> triangles;
   BVHNode *left;
   BVHNode *right;
 };
 
-AABB calculateBoundingBox(const std::vector<Triangle> &triangles)
-{
+AABB calculateBoundingBox(const std::vector<Triangle> &triangles) {
   AABB box;
   box.min = vec3(INT_MAX);
   box.max = vec3(INT_MIN);
 
-  for (const auto &triangle : triangles)
-  {
-    box.min.x = std::min(box.min.x, std::min(triangle.point_a.x, std::min(triangle.point_b.x, triangle.point_c.x)));
-    box.min.y = std::min(box.min.y, std::min(triangle.point_a.y, std::min(triangle.point_b.y, triangle.point_c.y)));
-    box.min.z = std::min(box.min.z, std::min(triangle.point_a.z, std::min(triangle.point_b.z, triangle.point_c.z)));
+  for (const Triangle &triangle : triangles) {
+    box.min.x = std::min(
+        box.min.x, std::min(triangle.point_a.x,
+                            std::min(triangle.point_b.x, triangle.point_c.x)));
+    box.min.y = std::min(
+        box.min.y, std::min(triangle.point_a.y,
+                            std::min(triangle.point_b.y, triangle.point_c.y)));
+    box.min.z = std::min(
+        box.min.z, std::min(triangle.point_a.z,
+                            std::min(triangle.point_b.z, triangle.point_c.z)));
 
-    box.max.x = std::max(box.max.x, std::max(triangle.point_a.x, std::max(triangle.point_b.x, triangle.point_c.x)));
-    box.max.y = std::max(box.max.y, std::max(triangle.point_a.y, std::max(triangle.point_b.y, triangle.point_c.y)));
-    box.max.z = std::max(box.max.z, std::max(triangle.point_a.z, std::max(triangle.point_b.z, triangle.point_c.z)));
+    box.max.x = std::max(
+        box.max.x, std::max(triangle.point_a.x,
+                            std::max(triangle.point_b.x, triangle.point_c.x)));
+    box.max.y = std::max(
+        box.max.y, std::max(triangle.point_a.y,
+                            std::max(triangle.point_b.y, triangle.point_c.y)));
+    box.max.z = std::max(
+        box.max.z, std::max(triangle.point_a.z,
+                            std::max(triangle.point_b.z, triangle.point_c.z)));
   }
 
   return box;
 }
 
-std::pair<std::vector<Triangle>, std::vector<Triangle>> splitTrianglesSpace(const std::vector<Triangle> &triangles, int axis)
-{
+std::pair<std::vector<Triangle>, std::vector<Triangle>>
+splitTrianglesSpace(std::vector<Triangle> &triangles, int axis) {
   std::vector<Triangle> left;
   std::vector<Triangle> right;
 
   float mid = 0;
-  for (const auto &triangle : triangles)
-  {
-    mid += triangle.point_a[axis] + triangle.point_b[axis] + triangle.point_c[axis];
+  for (const Triangle &triangle : triangles) {
+    mid += triangle.point_a[axis] + triangle.point_b[axis] +
+           triangle.point_c[axis];
   }
   mid /= triangles.size() * 3;
 
-  for (const auto &triangle : triangles)
-  {
-    if (triangle.point_a[axis] < mid || triangle.point_b[axis] < mid || triangle.point_c[axis] < mid)
-    {
-      left.push_back(triangle);
-    }
-    else
-    {
-      right.push_back(triangle);
+  for (const Triangle &triangle : triangles) {
+    if (triangle.point_a[axis] < mid || triangle.point_b[axis] < mid ||
+        triangle.point_c[axis] < mid) {
+      left.emplace_back(triangle);
+    } else {
+      right.emplace_back(triangle);
     }
   }
 
@@ -377,37 +364,30 @@ std::pair<std::vector<Triangle>, std::vector<Triangle>> splitTrianglesSpace(cons
 }
 
 // Function to build the BVH recursively
-BVHNode *buildBVH(std::vector<Triangle> &&triangles, int axis = 0)
-{
-
-  BVHNode *node = new BVHNode;
+BVHNode *buildBVH(std::vector<Triangle> &triangles, int axis = 0) {
+  auto *node = new BVHNode;
   node->bounds = calculateBoundingBox(triangles);
 
-  if (triangles.size() <= 20)
-  {
+  if (triangles.size() <= 20) {
     node->left = nullptr;
     node->right = nullptr;
     node->triangles = triangles;
-  }
-  else
-  {
+  } else {
+    std::pair<std::vector<Triangle>, std::vector<Triangle>> split =
+        splitTrianglesSpace(triangles, axis);
+    std::vector<Triangle> &left = split.first;
+    std::vector<Triangle> &right = split.second;
 
-    std::pair<std::vector<Triangle>, std::vector<Triangle>> split = splitTrianglesSpace(triangles, axis);
-    std::vector<Triangle> left = split.first;
-    std::vector<Triangle> right = split.second;
-
-    node->left = buildBVH(std::move(left), (axis + 1) % 3);
-    node->right = buildBVH(std::move(right), (axis + 1) % 3);
+    node->left = buildBVH(left, (axis + 1) % 3);
+    node->right = buildBVH(right, (axis + 1) % 3);
   }
 
   return node;
 }
 
-vector<Triangle> intersectBVH(BVHNode *node, Ray ray)
-{
+vector<Triangle> intersectBVH(BVHNode *node, Ray &ray) {
 
-  if (node->left == nullptr && node->right == nullptr)
-  {
+  if (node->left == nullptr && node->right == nullptr) {
     return node->triangles;
   }
 
@@ -416,10 +396,10 @@ vector<Triangle> intersectBVH(BVHNode *node, Ray ray)
                     node->left->bounds.min.y, node->left->bounds.max.y,
                     node->left->bounds.min.z, node->left->bounds.max.z)
 
-      && bboxIntersect(ray, node->right->bounds.min.x, node->right->bounds.max.x,
-                       node->right->bounds.min.y, node->right->bounds.max.y,
-                       node->right->bounds.min.z, node->right->bounds.max.z))
-  {
+      &&
+      bboxIntersect(ray, node->right->bounds.min.x, node->right->bounds.max.x,
+                    node->right->bounds.min.y, node->right->bounds.max.y,
+                    node->right->bounds.min.z, node->right->bounds.max.z)) {
     vector<Triangle> left = intersectBVH(node->left, ray);
     vector<Triangle> right = intersectBVH(node->right, ray);
     left.insert(left.end(), right.begin(), right.end());
@@ -428,15 +408,13 @@ vector<Triangle> intersectBVH(BVHNode *node, Ray ray)
   // if left, return left
   if (bboxIntersect(ray, node->left->bounds.min.x, node->left->bounds.max.x,
                     node->left->bounds.min.y, node->left->bounds.max.y,
-                    node->left->bounds.min.z, node->left->bounds.max.z))
-  {
+                    node->left->bounds.min.z, node->left->bounds.max.z)) {
     return intersectBVH(node->left, ray);
   }
   // if right, return right
   if (bboxIntersect(ray, node->right->bounds.min.x, node->right->bounds.max.x,
                     node->right->bounds.min.y, node->right->bounds.max.y,
-                    node->right->bounds.min.z, node->right->bounds.max.z))
-  {
+                    node->right->bounds.min.z, node->right->bounds.max.z)) {
     return intersectBVH(node->right, ray);
   }
 
@@ -446,8 +424,7 @@ vector<Triangle> intersectBVH(BVHNode *node, Ray ray)
 #endif
   return node->triangles;
 }
-class Mesh : public Object
-{
+class Mesh : public Object {
 public:
   vector<Triangle> triangles;
   string fname;
@@ -466,8 +443,8 @@ public:
   BVHNode *bVHNode;
 
 public:
-  Mesh(string fname_, bool is_bvh_, vec3 translation, Material material) : fname(fname_), is_bvh(is_bvh_)
-  {
+  Mesh(string fname_, bool is_bvh_, vec3 translation, Material material)
+      : fname(fname_), is_bvh(is_bvh_) {
     setMaterial(material);
     load_mesh(translation);
 #if DEBUG
@@ -476,33 +453,29 @@ public:
     cout << "is BVH = " << is_bvh << endl;
 #endif
 
-    if (this->is_bvh)
-    {
+    if (this->is_bvh) {
 #if DEBUG
       cout << "BUILDING BVH" << endl;
 #endif
-      bVHNode = buildBVH(std::move(this->triangles));
+      bVHNode = buildBVH(this->triangles);
 #if DEBUG
       cout << "BUILT BVH" << endl;
 #endif
     }
   }
 
-  void load_mesh(vec3 translation)
-  {
+  void load_mesh(vec3 &translation) {
     ifstream objFile(this->fname);
     string line;
     vector<vec3> v_positions;
     vector<vec3> vn_positions;
 
-    while (getline(objFile, line))
-    {
+    while (getline(objFile, line)) {
       istringstream stream(line);
       string token;
       stream >> token;
 
-      if (token == "v")
-      {
+      if (token == "v") {
         float x, y, z;
         stream >> x >> y >> z;
         vec3 pos = vec3(x, y, z) + translation;
@@ -515,22 +488,17 @@ public:
         this->min_z = min(this->min_z, pos.z);
         this->max_z = max(this->max_z, pos.z);
         v_positions.push_back(pos);
-      }
-      else if (token == "vn")
-      {
+      } else if (token == "vn") {
         // normals might not be unit vectors
         float x, y, z;
         stream >> x >> y >> z;
         vn_positions.push_back(normalize(vec3(x, y, z)));
-      }
-      else if (token == "f")
-      {
+      } else if (token == "f") {
         string i, j, k;
         stream >> i >> j >> k;
 
         bool has_normals = i.find("//") != string::npos;
-        if (has_normals)
-        {
+        if (has_normals) {
           int i_v = stoi(i.substr(0, i.find("//")));
           int i_vn = stoi(i.substr(i.find("//") + 2));
 
@@ -540,35 +508,31 @@ public:
           int k_v = stoi(k.substr(0, k.find("//")));
           int k_vn = stoi(k.substr(k.find("//") + 2));
 
-          this->triangles.push_back(Triangle(
+          this->triangles.emplace_back(
               v_positions[i_v - 1], v_positions[j_v - 1], v_positions[k_v - 1],
               vn_positions[i_vn - 1], vn_positions[j_vn - 1],
-              vn_positions[k_vn - 1], this->material));
-        }
-        else
-        {
-          this->triangles.push_back(
-              Triangle(v_positions[stoi(i) - 1], v_positions[stoi(j) - 1],
-                       v_positions[stoi(k) - 1], this->material));
+              vn_positions[k_vn - 1], this->material);
+        } else {
+          this->triangles.emplace_back(
+              v_positions[stoi(i) - 1], v_positions[stoi(j) - 1],
+              v_positions[stoi(k) - 1], this->material);
         }
       }
     }
     objFile.close();
 
-    cout << "Number of Triangles for " << this->fname << " = " << this->triangles.size() << endl;
+    cout << "Number of Triangles for " << this->fname << " = "
+         << this->triangles.size() << endl;
   }
 
-  Hit intersect(Ray ray) override
-  {
+  Hit intersect(Ray &ray) override {
     Hit closest_hit;
 
     if (!bboxIntersect(ray, min_x, max_x, min_y, max_y, min_z, max_z))
       return closest_hit;
 
-    if (this->is_bvh)
-    {
-      for (Triangle t : intersectBVH(this->bVHNode, ray))
-      {
+    if (this->is_bvh) {
+      for (Triangle &t : intersectBVH(this->bVHNode, ray)) {
         Hit h = t.intersect(ray);
         if (h.hit && h.distance < closest_hit.distance)
           closest_hit = h;
@@ -577,8 +541,7 @@ public:
       return closest_hit;
     }
 
-    for (Triangle t : this->triangles)
-    {
+    for (Triangle &t : this->triangles) {
       Hit h = t.intersect(ray);
       if (h.hit && h.distance < closest_hit.distance)
         closest_hit = h;
@@ -593,15 +556,13 @@ public:
 /**
  * Light class
  */
-class Light
-{
+class Light {
 public:
   vec3 position;
   vec3 color;
 
   Light(vec3 position, vec3 color) : position(position), color(color) {}
-
-  explicit Light(vec3 position) { Light(position, vec3(1.0f)); }
+  explicit Light(vec3 position) : Light(position, vec3(1.0f)) {}
 };
 // #endregion
 
@@ -611,6 +572,23 @@ vec3 ambient_light(0.5f);
 vector<Object *> objects; // list of all objects in the scene
 
 // #region PHONG-MODEL
+bool is_light_covered(vec3 intersection_point, vec3 intersection_normal,
+                      vec3 light_direction, float light_distance) {
+  if (glm::dot(intersection_normal, light_direction) < 0) {
+    return true;
+  }
+
+  Ray shadow =
+      Ray(intersection_point + 0.001f * light_direction, light_direction);
+  for (Object *object : objects) {
+    Hit hit = object->intersect(shadow);
+    if (hit.hit && hit.distance <= light_distance) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Function for computing color of an object according to the Phong Model
  * @param point A point belonging to the object for which the color is computed
@@ -620,43 +598,51 @@ vector<Object *> objects; // list of all objects in the scene
  * viewer/camera
  * @param material A material structure representing the material of the object
  */
-vec3 PhongModel(vec3 point, vec3 normal, vec2 uv, vec3 view_direction,
-                Material material)
-{
-  vec3 color(0.0f);
+vec3 PhongModel(vec3 &point, vec3 &normal, vec2 &uv, vec3 &&view_direction,
+                Material &&material) {
+  glm::vec3 color(0.0);
 
-  vec3 I_diffuse = vec3(0), I_specular = vec3(0),
-       // ambient illumination
-      I_ambient = material.ambient * ambient_light;
+  for (auto &light : lights) {
+    glm::vec3 light_direction = glm::normalize(light->position - point);
 
-  for (Light *&l : lights)
-  {
-    /* Ex3: Modify the code by adding attenuation of the light due to distance
-     * from the intersection point to the light source
-     */
-    float r = distance(point, l->position);
-    float attenuation = 1 / pow(max(r, 0.5f), 2);
+    float light_distance = glm::distance(light->position, point);
+    if (is_light_covered(point, normal, light_direction, light_distance)) {
+      continue;
+    }
 
-    // DIFFUSE REFLECTION:
-    // from diffuse reflection point, cos of angle of surface normal n and
-    // direction from point to light source
-    vec3 l_direction = normalize(l->position - point);
-    float cos_phi =
-        glm::clamp(dot(normal, l_direction), 0.0f, 1.0f); // already normalized
+    glm::vec3 reflected_direction = glm::reflect(-light_direction, normal);
 
-    I_diffuse += material.diffuse * cos_phi * l->color * attenuation *
-                 (material.texture ? material.texture(uv) : vec3(1.0f));
+    float NdotL = glm::clamp(glm::dot(normal, light_direction), 0.0f, 1.0f);
+    float VdotR =
+        glm::clamp(glm::dot(view_direction, reflected_direction), 0.0f, 1.0f);
 
-    // SPECULAR HIGHLIGHT:
-    vec3 r_direction = reflect(-l_direction, normal);
-    float k = max(material.shininess, 1.0f);
-    float cos_alpha = glm::clamp(dot(view_direction, r_direction), 0.0f, 1.0f);
-    I_specular +=
-        material.specular * pow(cos_alpha, k) * l->color * attenuation;
+    glm::vec3 diffuse_color = material.diffuse;
+    if (material.texture) {
+      diffuse_color = material.texture(uv);
+    }
+
+    glm::vec3 diffuse = diffuse_color * glm::vec3(NdotL);
+    //    glm::vec3 specular =
+    //        material.specular * glm::vec3(pow(VdotR, material.shininess));
+
+    // distance to the light
+    float r = glm::distance(point, light->position);
+    r = max(r, 0.1f);
+
+    float shadow = 1.0f;
+    Ray light_r = Ray(point + light_direction * 0.0001f, light_direction);
+    for (auto &object : objects) {
+      Hit h = object->intersect(light_r);
+      if (h.hit && h.distance < r) {
+        shadow = 0.0;
+        break;
+      }
+    }
+
+    color += light->color * shadow * (diffuse /*+ specular*/) / r / r;
   }
-
-  color = I_ambient + I_diffuse + I_specular;
-  return clamp(color, vec3(0), vec3(1));
+  color += ambient_light * material.ambient;
+  return color;
 }
 // #endregion
 
@@ -666,23 +652,21 @@ vec3 PhongModel(vec3 point, vec3 normal, vec2 uv, vec3 view_direction,
  * @param ray Ray that should be traced through the scene
  * @return Color at the intersection point
  */
-vec3 trace_ray(Ray ray)
-{
+vec3 trace_ray(Ray &ray) {
   Hit closest_hit;
 
-  for (Object *&o : objects)
-  {
+  for (Object *&o : objects) {
     Hit hit = o->intersect(ray);
     if (hit.hit && hit.distance < closest_hit.distance)
       closest_hit = hit;
   }
 
-  if (!closest_hit.hit)
-  {
+  if (!closest_hit.hit) {
     return vec3(0);
   }
-  return PhongModel(closest_hit.intersection, closest_hit.normal, closest_hit.uv,
-                    normalize(-ray.direction), closest_hit.object->getMaterial());
+  return PhongModel(closest_hit.intersection, closest_hit.normal,
+                    closest_hit.uv, normalize(-ray.direction),
+                    closest_hit.object->getMaterial());
 }
 // #endregion
 
@@ -690,8 +674,7 @@ vec3 trace_ray(Ray ray)
 /**
  * Function defining the scene
  */
-void sceneDefinition()
-{
+void sceneDefinition() {
   vec3 color_red{1.5f, 0.3f, 0.3f};
   vec3 color_blue{0.4f, 0.4f, 1.5f};
   vec3 color_green{0.5f, 1.5f, 0.5f};
@@ -720,26 +703,35 @@ void sceneDefinition()
   white_plain.shininess = 0.0f;
 
   // Objects
-  // objects.push_back(new Mesh("./meshes/armadillo_small.obj", true, {-4, -3, 10}, white_plain));
-  // objects.push_back(new Mesh("./meshes/lucy_small.obj", true, {4, -3, 10}, white_plain));
-  // objects.push_back(new Mesh("./meshes/bunny.obj", true, {0, -3, 8}, white_plain));
+//   objects.push_back(new Mesh("./meshes/armadillo_small.obj", true, {-4, -3, 10}, white_plain));
+//   objects.push_back(new Mesh("./meshes/lucy_small.obj", true, {4, -3, 10}, white_plain));
+//   objects.push_back(new Mesh("./meshes/bunny_small.obj", true, {0, -3, 8}, white_plain));
 
-  objects.push_back(new Mesh("./meshes/armadillo.obj", true, {-4, -3, 10}, white_plain));
-  objects.push_back(new Mesh("./meshes/lucy.obj", true, {4, -3, 10}, white_plain));
-  objects.push_back(new Mesh("./meshes/bunny.obj", true, {0, -3, 8}, white_plain));
+  objects.push_back(
+      new Mesh("./meshes/armadillo.obj", true, {-4, -3, 10}, white_plain));
+  objects.push_back(
+      new Mesh("./meshes/lucy.obj", true, {4, -3, 10}, white_plain));
+  objects.push_back(
+      new Mesh("./meshes/bunny.obj", true, {0, -3, 8}, white_plain));
 
   // planes
-  objects.push_back(new Plane({0.0f, 0.0f, -0.01f}, {0.0f, 0.0f, 1.0f}, white_plain)); // back
-  objects.push_back(new Plane({15.0f, 0.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, white_plain)); // right
-  objects.push_back(new Plane({0.0f, 0.0f, 30.0f}, {0.0f, 0.0f, -1.0f}, white_plain)); // front
-  objects.push_back(new Plane({-15.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, white_plain)); // left
-  objects.push_back(new Plane({0.0f, 27.0f, 0.0f}, {0.0f, -1.0f, 0.0f}, white_plain)); // top
-  objects.push_back(new Plane({0.0f, -3.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, white_plain));  // bottom
+  objects.push_back(
+      new Plane({0.0f, 0.0f, -0.01f}, {0.0f, 0.0f, 1.0f}, white_plain)); // back
+  objects.push_back(new Plane({15.0f, 0.0f, 0.0f}, {-1.0f, 0.0f, 0.0f},
+                              white_plain)); // right
+  objects.push_back(new Plane({0.0f, 0.0f, 30.0f}, {0.0f, 0.0f, -1.0f},
+                              white_plain)); // front
+  objects.push_back(
+      new Plane({-15.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, white_plain)); // left
+  objects.push_back(
+      new Plane({0.0f, 27.0f, 0.0f}, {0.0f, -1.0f, 0.0f}, white_plain)); // top
+  objects.push_back(new Plane({0.0f, -3.0f, 0.0f}, {0.0f, 1.0f, 0.0f},
+                              white_plain)); // bottom
 
   // lights
-  lights.push_back(new Light({0.0f, 26.0f, 2.0f}, vec3(100.0f)));
-  lights.push_back(new Light({0.0f, 5.0f, 1.0f}, vec3(40.0f)));
-  lights.push_back(new Light({0.0f, 1.0f, 3.0f}, vec3(25.0f)));
+  lights.push_back(new Light({0.0f, 5.0f, 15.0f}, vec3(30.0f)));
+  lights.push_back(new Light({0.0f, 5.0f, 1.0f}, vec3(15.0f)));
+  lights.push_back(new Light({0.0f, 1.0f, 3.0f}, vec3(7.0f)));
 }
 // #endregion
 
@@ -751,8 +743,7 @@ void sceneDefinition()
  * @param intensity Input intensity
  * @return Tone mapped intensity in range [0,1]
  */
-vec3 toneMapping(vec3 intensity)
-{
+vec3 toneMapping(vec3 &&intensity) {
   float alpha = 0.8f, beta = 1.2f, gamma = 2.13f;
   vec3 I_tone_mapped = alpha * pow(intensity, vec3(beta));
   vec3 I_gamma_corrected = min(pow(I_tone_mapped, vec3(1 / gamma)), 1.0f);
@@ -761,16 +752,15 @@ vec3 toneMapping(vec3 intensity)
 
 // #endregion
 
-int main(int argc, char const *argv[])
-{
+int main(int argc, char const *argv[]) {
   clock_t t = clock(); // keeping the time of the rendering
                        // Default
-  // Final
-   int width = 2048;
-   int height = 1536;
+                       // Final
+  int width = 2048;
+  int height = 1536;
   // Debug
-//  int width = 1024;
-//  int height = 768;
+  //  int width = 1024;
+  //  int height = 768;
   float fov = 90; // field of view
   sceneDefinition();
   Image image(width, height); // Create an image where we will store the result
@@ -779,8 +769,7 @@ int main(int argc, char const *argv[])
   float Y = s * height / 2;
 
   for (int i = 0; i < width; i++)
-    for (int j = 0; j < height; j++)
-    {
+    for (int j = 0; j < height; j++) {
       float dx = X + i * s + s / 2;
       float dy = Y - j * s - s / 2;
       vec3 direction(dx, dy, 1);
