@@ -196,14 +196,14 @@ public:
     if (t < 0)
       return Hit();
 
-    Hit hit{
-        .hit = true,
-        .normal = normalize(normal),
-        .intersection = ray.origin + t * ray.direction,
-        .distance = distance(ray.origin, hit.intersection),
-        .object = this,
-        .uv = {0, 0},
-    };
+    Hit hit;
+    hit.hit = true;
+    hit.normal = normalize(normal);
+    hit.intersection = ray.origin + t * ray.direction;
+    hit.distance = distance(ray.origin, hit.intersection);
+    hit.object = this;
+    hit.uv = {0, 0};
+
     return hit;
   }
 };
@@ -268,13 +268,13 @@ public:
     else
       normal = normalize(perpendicular);
 
-    Hit hit = {
-        .hit = true,
-        .normal = normal,
-        .intersection = p,
-        .distance = plane_hit.distance,
-        .object = this,
-    };
+    Hit hit;
+    hit.hit = true;
+    hit.normal = normal;
+    hit.intersection = p;
+    hit.distance = plane_hit.distance;
+    hit.object = this;
+
     return hit;
   }
 };
@@ -409,13 +409,14 @@ vector<Triangle> intersectBVH(BVHNode *node, Ray ray)
   {
     return node->triangles;
   }
+  // Tree is balanced so we can stop recursion if one side is empty
   if (node->left == nullptr)
   {
-    return intersectBVH(node->right, ray);
+    return node->right->triangles;
   }
   if (node->right == nullptr)
   {
-    return intersectBVH(node->left, ray);
+    return node->left->triangles;
   }
 
   // If right and left, return both
@@ -446,9 +447,8 @@ vector<Triangle> intersectBVH(BVHNode *node, Ray ray)
   {
     return intersectBVH(node->right, ray);
   }
-
-  cout << "EMPTY, is this normal?" << endl;
-  cout << node->triangles.size() << endl;
+  // cout << "EMPTY, is this normal?" << endl;
+  // cout << node->triangles.size() << endl;
   return node->triangles;
 }
 class Mesh : public Object
@@ -468,7 +468,6 @@ public:
   float max_z = INT_MIN;
 
   bool is_bvh;
-  // no smoothing
   BVHNode *bVHNode;
 
 public:
@@ -552,13 +551,10 @@ public:
                        v_positions[stoi(k) - 1], this->material));
         }
       }
-      else if (token == "o")
-      {
-        stream >> this->object_name;
-      }
-      // add smoothing checks
     }
     objFile.close();
+
+    cout << "Number of Triangles for " << this->fname << " = " << this->triangles.size() << endl;
   }
 
   Hit intersect(Ray ray) override
@@ -647,13 +643,6 @@ vec3 PhongModel(vec3 point, vec3 normal, vec2 uv, vec3 view_direction,
     float cos_phi =
         glm::clamp(dot(normal, l_direction), 0.0f, 1.0f); // already normalized
 
-    /* Ex2: Modify the code by adding texturing,
-     * i.e. diffuse color should be computed using one of the texture functions
-     * according to the texture coordinates stored in the uv variable.
-     * Make sure that the code works also for objects that should not have
-     * texture.
-     */
-
     I_diffuse += material.diffuse * cos_phi * l->color * attenuation *
                  (material.texture ? material.texture(uv) : vec3(1.0f));
 
@@ -691,16 +680,6 @@ vec3 trace_ray(Ray ray)
   {
     return vec3(0);
   }
-  Object *obj = closest_hit.object;
-  //  cout << "obj " << obj << endl;
-  Mesh *mesh = dynamic_cast<Mesh *>(obj);
-  if (mesh)
-  {
-    //  cout << mesh->object_name << " " << mesh << endl;
-    //  cout << "Material: " << obj->getMaterial().diffuse.x << " "
-    //       << obj->getMaterial().diffuse.y << " " << obj->getMaterial().diffuse.z
-    //       << endl;
-  }
   return PhongModel(closest_hit.intersection, closest_hit.normal, closest_hit.uv,
                     normalize(-ray.direction), closest_hit.object->getMaterial());
 }
@@ -717,107 +696,44 @@ void sceneDefinition()
   vec3 color_green{0.5f, 1.5f, 0.5f};
   vec3 color_white{1.5f, 1.5f, 1.5f};
 
-  Material red_specular{
-      .ambient = {0.01f, 0.03f, 0.03f},
-      .diffuse = color_red,
-      .specular = vec3(0.5f),
-      .shininess = 10.0f,
-  };
+  Material red_specular;
+  red_specular.ambient = {0.01f, 0.03f, 0.03f};
+  red_specular.diffuse = color_red;
+  red_specular.specular = vec3(0.5f);
+  red_specular.shininess = 10.0f;
 
-  Material blue_shiny{
-      .ambient = {0.07f, 0.07f, 0.1f},
-      .diffuse = color_blue,
-      .specular = vec3(0.6f),
-      .shininess = 100.0f,
-  };
+  Material blue_shiny;
+  blue_shiny.ambient = {0.07f, 0.07f, 0.1f};
+  blue_shiny.diffuse = color_blue;
+  blue_shiny.specular = vec3(0.6f);
+  blue_shiny.shininess = 100.0f;
 
-  Material green_diffuse{
-      .ambient = {0.07f, 0.09f, 0.07f},
-      .diffuse = color_green,
-  };
+  Material green_diffuse;
+  green_diffuse.ambient = {0.07f, 0.09f, 0.07f};
+  green_diffuse.diffuse = color_green;
 
-  Material white_plain{
-      .ambient = {1.0f, 1.0f, 1.0f},
-      .diffuse = color_white,
-      .specular = vec3(1.6f),
-      .shininess = 0.0f,
-  };
+  Material white_plain;
+  white_plain.ambient = {1.0f, 1.0f, 1.0f};
+  white_plain.diffuse = color_white;
+  white_plain.specular = vec3(1.6f);
+  white_plain.shininess = 0.0f;
 
-  Material material_rainbow{
-      .texture = &rainbowTexture,
-  };
+  // Objects
+  // objects.push_back(new Mesh("./meshes/armadillo_small.obj", true, {-4, -3, 10}, white_plain));
+  // objects.push_back(new Mesh("./meshes/lucy_small.obj", true, {4, -3, 10}, white_plain));
+  // objects.push_back(new Mesh("./meshes/bunny_small.obj", true, {0, -3, 8}, white_plain));
 
-  // TEST
-  // objects.push_back(new Mesh("./meshes/armadillo_with_normals.obj",
-  //                            {-4, -3, 10},
-  //                            {
-  //                                .ambient = {0.7f, 0.7f, 0.1f},
-  //                                .diffuse = {0.3, 0.3, 1.0f},
-  //                                .specular = {0.2f, 0.2f, 0.5f},
-  //                                .shininess = 40.0f,
-  //                            }));
-  // objects.push_back(new Mesh("./meshes/lucy_with_normals.obj", {4, -3, 10},
-  //                            {
-  //                                .ambient = {0.2f, 0.5f, 0.2f},
-  //                                .diffuse = {0.4f, 1.0f, 0.4f},
-  //                                .specular = {0.2f, 0.4f, 0.1f},
-  //                                .shininess = 30.0f,
-  //                            }));
-  objects.push_back(new Mesh("./meshes/bunny_small.obj", true, {0, -3, 8},
-                             {
-                                 .ambient = {0.7f, 0.1f, 0.1f},
-                                 .diffuse = {1.0f, 0.3f, 0.3f},
-                                 .specular = {0.4f, 0.1f, 0.1f},
-                                 .shininess = 50.0f,
-                             }));
-  // // objects.push_back(new Mesh("./meshes/bunny.obj",
-  //                             {0, -2, 8},
-  //                             {.diffuse = {0.25f, 0.25f, 0.5f},}));
-  // objects.push_back(new Mesh("./meshes/"))
-
-  // objects.push_back(new Mesh("./meshes/armadillo.obj", blue_shiny));
-
-  // objects.push_back(new Mesh("./meshes/lucy.obj", green_diffuse));
-
-  // objects.push_back(new Triangle(
-  // 	{-1.0f, 2.5f, 6.0f},
-  // 	{1.0f, 2.0f, 8.0f},
-  // 	{3.0f, 2.0f, 6.0f},
-  // 	red_specular));
-
-  // objects.push_back(new Triangle(
-  // 	{-1.0f, 5.0f, 6.0f},
-  // 	{-10.0f, 25.0f, 10.0f},
-  // 	{-3.0f, 1.0f, 6.0f},
-  // 	green_diffuse));
-
-  // spheres
-  // objects.push_back(new Sphere(0.5f, {-1.0f, -2.5f, 6.0f}, white_plain));
-  // objects.push_back(new Sphere(0.5f, {-1.0f, -2.5f, 6.0f}, red_specular));
-  // objects.push_back(new Sphere(1.0f, {1.0f, -2.0f, 8.0f}, blue_shiny));
-  // objects.push_back(new Sphere(1.0f, {3.0f, -2.0f, 6.0f}, green_diffuse));
-  // objects.push_back(new Sphere(6.0f, {-5.0f, 3.5f, 20.0f},
-  // material_rainbow));
+  objects.push_back(new Mesh("./meshes/armadillo.obj", true, {-4, -3, 10}, white_plain));
+  objects.push_back(new Mesh("./meshes/lucy.obj", true, {4, -3, 10}, white_plain));
+  objects.push_back(new Mesh("./meshes/bunny.obj", true, {0, -3, 8}, white_plain));
 
   // planes
-  objects.push_back(new Plane({0.0f, 0.0f, -0.01f}, {0.0f, 0.0f, 1.0f},
-                              Material())); // back
-  objects.push_back(new Plane({15.0f, 0.0f, 0.0f}, {-1.0f, 0.0f, 0.0f},
-                              {
-                                  .diffuse = {0.6f, 0.6f, 1.0f},
-                              })); // right
-  objects.push_back(new Plane({0.0f, 0.0f, 30.0f}, {0.0f, 0.0f, -1.0f},
-                              {
-                                  .diffuse = {0.5f, 1.0f, 0.5f},
-                              })); // front
-  objects.push_back(new Plane({-15.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f},
-                              {
-                                  .diffuse = {0.6f, 0.4f, 0.4f},
-                              })); // left
-  objects.push_back(new Plane({0.0f, 27.0f, 0.0f}, {0.0f, -1.0f, 0.0f},
-                              Material())); // top
-  objects.push_back(new Plane({0.0f, -3.0f, 0.0f}, {0.0f, 1.0f, 0.0f},
-                              Material())); // bottom
+  objects.push_back(new Plane({0.0f, 0.0f, -0.01f}, {0.0f, 0.0f, 1.0f}, white_plain)); // back
+  objects.push_back(new Plane({15.0f, 0.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, white_plain)); // right
+  objects.push_back(new Plane({0.0f, 0.0f, 30.0f}, {0.0f, 0.0f, -1.0f}, white_plain)); // front
+  objects.push_back(new Plane({-15.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, white_plain)); // left
+  objects.push_back(new Plane({0.0f, 27.0f, 0.0f}, {0.0f, -1.0f, 0.0f}, white_plain)); // top
+  objects.push_back(new Plane({0.0f, -3.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, white_plain));  // bottom
 
   // lights
   lights.push_back(new Light({0.0f, 26.0f, 2.0f}, vec3(100.0f)));
@@ -849,11 +765,11 @@ int main(int argc, char const *argv[])
   clock_t t = clock(); // keeping the time of the rendering
                        // Default
   // Final
-  // int width = 2048;
-  // int height = 1536;
+  int width = 2048;
+  int height = 1536;
   // Debug
-  int width = 1024 / 4;
-  int height = 768 / 4;
+  // int width = 1024 / 4;
+  // int height = 768 / 4;
   float fov = 90; // field of view
   sceneDefinition();
   Image image(width, height); // Create an image where we will store the result
