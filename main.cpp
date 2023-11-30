@@ -311,7 +311,6 @@ bool bboxIntersect(Ray ray, float mi_x, float ma_x, float mi_y, float ma_y,
   if ((tmin > tzmax) || (tzmin > tmax))
     return false;
 
-  // If all tests passed, there is an intersection with the bounding box
   return true;
 }
 
@@ -331,27 +330,49 @@ struct BVHNode
 
 AABB calculateBoundingBox(const std::vector<Triangle> &triangles)
 {
-  float min_x = INT_MAX;
-  float max_x = INT_MIN;
-
-  float min_y = INT_MAX;
-  float max_y = INT_MIN;
-
-  float min_z = INT_MAX;
-  float max_z = INT_MIN;
+  AABB box;
+  box.min = vec3(INT_MAX);
+  box.max = vec3(INT_MIN);
 
   for (const auto &triangle : triangles)
   {
-    min_x = min(min_x, min(triangle.point_a.x, min(triangle.point_b.x, triangle.point_c.x)));
-    max_x = max(max_x, max(triangle.point_a.x, max(triangle.point_b.x, triangle.point_c.x)));
+    box.min.x = std::min(box.min.x, std::min(triangle.point_a.x, std::min(triangle.point_b.x, triangle.point_c.x)));
+    box.min.y = std::min(box.min.y, std::min(triangle.point_a.y, std::min(triangle.point_b.y, triangle.point_c.y)));
+    box.min.z = std::min(box.min.z, std::min(triangle.point_a.z, std::min(triangle.point_b.z, triangle.point_c.z)));
 
-    min_y = min(min_y, min(triangle.point_a.y, min(triangle.point_b.y, triangle.point_c.y)));
-    max_y = max(max_y, max(triangle.point_a.y, max(triangle.point_b.y, triangle.point_c.y)));
-
-    min_z = min(min_z, min(triangle.point_a.z, min(triangle.point_b.z, triangle.point_c.z)));
-    max_z = max(max_z, max(triangle.point_a.z, max(triangle.point_b.z, triangle.point_c.z)));
+    box.max.x = std::max(box.max.x, std::max(triangle.point_a.x, std::max(triangle.point_b.x, triangle.point_c.x)));
+    box.max.y = std::max(box.max.y, std::max(triangle.point_a.y, std::max(triangle.point_b.y, triangle.point_c.y)));
+    box.max.z = std::max(box.max.z, std::max(triangle.point_a.z, std::max(triangle.point_b.z, triangle.point_c.z)));
   }
-  return {vec3(min_x, min_y, min_z), vec3(max_x, max_y, max_z)};
+
+  return box;
+}
+
+std::pair<std::vector<Triangle>, std::vector<Triangle>> splitTrianglesSpace(const std::vector<Triangle> &triangles, int axis)
+{
+  std::vector<Triangle> left;
+  std::vector<Triangle> right;
+
+  float mid = 0;
+  for (const auto &triangle : triangles)
+  {
+    mid += triangle.point_a[axis] + triangle.point_b[axis] + triangle.point_c[axis];
+  }
+  mid /= triangles.size() * 3;
+
+  for (const auto &triangle : triangles)
+  {
+    if (triangle.point_a[axis] < mid || triangle.point_b[axis] < mid || triangle.point_c[axis] < mid)
+    {
+      left.push_back(triangle);
+    }
+    else
+    {
+      right.push_back(triangle);
+    }
+  }
+
+  return {left, right};
 }
 
 // Function to build the BVH recursively
@@ -361,7 +382,7 @@ BVHNode *buildBVH(std::vector<Triangle> &&triangles, int axis = 0)
   BVHNode *node = new BVHNode;
   node->bounds = calculateBoundingBox(triangles);
 
-  if (triangles.size() <= 100)
+  if (triangles.size() <= 20)
   {
     node->left = nullptr;
     node->right = nullptr;
@@ -369,11 +390,13 @@ BVHNode *buildBVH(std::vector<Triangle> &&triangles, int axis = 0)
   }
   else
   {
-    // TODO CREATE two boxes to split the triangles
 
-    size_t mid = triangles.size() / 2;
-    node->left = buildBVH(std::move(std::vector<Triangle>(triangles.begin(), triangles.begin() + mid)), (axis + 1) % 3);
-    node->right = buildBVH(std::move(std::vector<Triangle>(triangles.begin() + mid, triangles.end())), (axis + 1) % 3);
+    std::pair<std::vector<Triangle>, std::vector<Triangle>> split = splitTrianglesSpace(triangles, axis);
+    std::vector<Triangle> left = split.first;
+    std::vector<Triangle> right = split.second;
+
+    node->left = buildBVH(std::move(left), (axis + 1) % 3);
+    node->right = buildBVH(std::move(right), (axis + 1) % 3);
   }
 
   return node;
@@ -381,7 +404,6 @@ BVHNode *buildBVH(std::vector<Triangle> &&triangles, int axis = 0)
 
 vector<Triangle> intersectBVH(BVHNode *node, Ray ray)
 {
-  Hit closest_hit;
 
   if (node->left == nullptr && node->right == nullptr)
   {
@@ -396,20 +418,37 @@ vector<Triangle> intersectBVH(BVHNode *node, Ray ray)
     return intersectBVH(node->left, ray);
   }
 
+  // If right and left, return both
+  if (bboxIntersect(ray, node->left->bounds.min.x, node->left->bounds.max.x,
+                    node->left->bounds.min.y, node->left->bounds.max.y,
+                    node->left->bounds.min.z, node->left->bounds.max.z)
+
+      && bboxIntersect(ray, node->right->bounds.min.x, node->right->bounds.max.x,
+                       node->right->bounds.min.y, node->right->bounds.max.y,
+                       node->right->bounds.min.z, node->right->bounds.max.z))
+  {
+    vector<Triangle> left = intersectBVH(node->left, ray);
+    vector<Triangle> right = intersectBVH(node->right, ray);
+    left.insert(left.end(), right.begin(), right.end());
+    return left;
+  }
+  // if left, return left
   if (bboxIntersect(ray, node->left->bounds.min.x, node->left->bounds.max.x,
                     node->left->bounds.min.y, node->left->bounds.max.y,
                     node->left->bounds.min.z, node->left->bounds.max.z))
   {
     return intersectBVH(node->left, ray);
   }
-  else if (bboxIntersect(ray, node->right->bounds.min.x, node->right->bounds.max.x,
-                         node->right->bounds.min.y, node->right->bounds.max.y,
-                         node->right->bounds.min.z, node->right->bounds.max.z))
+  // if right, return right
+  if (bboxIntersect(ray, node->right->bounds.min.x, node->right->bounds.max.x,
+                    node->right->bounds.min.y, node->right->bounds.max.y,
+                    node->right->bounds.min.z, node->right->bounds.max.z))
   {
     return intersectBVH(node->right, ray);
   }
-  // Empty?
-  // std::vector<Triangle> emptyVector;
+
+  cout << "EMPTY, is this normal?" << endl;
+  cout << node->triangles.size() << endl;
   return node->triangles;
 }
 class Mesh : public Object
@@ -435,7 +474,6 @@ public:
 public:
   Mesh(string fname_, bool is_bvh_, vec3 translation, Material material) : fname(fname_), is_bvh(is_bvh_)
   {
-    // [TODO] add option to select if BVH
     setMaterial(material);
     load_mesh(translation);
     cout << min_x << " " << min_y << " " << min_z << endl;
@@ -525,7 +563,6 @@ public:
 
   Hit intersect(Ray ray) override
   {
-
     Hit closest_hit;
 
     if (!bboxIntersect(ray, min_x, max_x, min_y, max_y, min_z, max_z))
@@ -811,14 +848,12 @@ int main(int argc, char const *argv[])
 {
   clock_t t = clock(); // keeping the time of the rendering
                        // Default
+  // Final
+  // int width = 2048;
+  // int height = 1536;
+  // Debug
   int width = 1024 / 4;
   int height = 768 / 4;
-  // Debug
-  //  int width = 320;
-  //  int height = 210;
-  // Final
-  //   int width = 2048;
-  //   int height = 1536;
   float fov = 90; // field of view
   sceneDefinition();
   Image image(width, height); // Create an image where we will store the result
